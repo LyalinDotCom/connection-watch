@@ -1,0 +1,567 @@
+// !UTF8*0
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10001000000000000000001 /* ConnectionWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20001000000000000000001 /* ConnectionWatchApp.swift */; };
+		A10002000000000000000002 /* ConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20002000000000000000002 /* ConnectionState.swift */; };
+		A10003000000000000000003 /* PingResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20003000000000000000003 /* PingResult.swift */; };
+		A10004000000000000000004 /* PingHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20004000000000000000004 /* PingHistory.swift */; };
+		A10005000000000000000005 /* PingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20005000000000000000005 /* PingService.swift */; };
+		A10006000000000000000006 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20006000000000000000006 /* NetworkMonitor.swift */; };
+		A10007000000000000000007 /* ConnectionMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20007000000000000000007 /* ConnectionMonitorService.swift */; };
+		A10008000000000000000008 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20008000000000000000008 /* NotificationService.swift */; };
+		A10016000000000000000016 /* HTTPProbeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20016000000000000000016 /* HTTPProbeService.swift */; };
+		A10009000000000000000009 /* StatusViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20009000000000000000009 /* StatusViewModel.swift */; };
+		A1000A00000000000000000A /* StatusItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000A00000000000000000A /* StatusItemView.swift */; };
+		A1000B00000000000000000B /* PopoverContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000B00000000000000000B /* PopoverContentView.swift */; };
+		A1000C00000000000000000C /* LatencyChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000C00000000000000000C /* LatencyChartView.swift */; };
+		A1000D00000000000000000D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000D00000000000000000D /* SettingsView.swift */; };
+		A1000E00000000000000000E /* PingOutputParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000E00000000000000000E /* PingOutputParser.swift */; };
+		A1000F00000000000000000F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2000F00000000000000000F /* Assets.xcassets */; };
+		A10010000000000000000010 /* PingOutputParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20010000000000000000010 /* PingOutputParserTests.swift */; };
+		A10011000000000000000011 /* PingHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20011000000000000000011 /* PingHistoryTests.swift */; };
+		A10020000000000000000020 /* PingOutputParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000E00000000000000000E /* PingOutputParser.swift */; };
+		A10021000000000000000021 /* PingHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20004000000000000000004 /* PingHistory.swift */; };
+		A10022000000000000000022 /* PingResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20003000000000000000003 /* PingResult.swift */; };
+		A10023000000000000000023 /* ConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20002000000000000000002 /* ConnectionState.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A30001000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A50001000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A40001000000000000000001;
+			remoteInfo = ConnectionWatch;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		A20001000000000000000001 /* ConnectionWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionWatchApp.swift; sourceTree = "<group>"; };
+		A20002000000000000000002 /* ConnectionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionState.swift; sourceTree = "<group>"; };
+		A20003000000000000000003 /* PingResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingResult.swift; sourceTree = "<group>"; };
+		A20004000000000000000004 /* PingHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingHistory.swift; sourceTree = "<group>"; };
+		A20005000000000000000005 /* PingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingService.swift; sourceTree = "<group>"; };
+		A20006000000000000000006 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		A20007000000000000000007 /* ConnectionMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionMonitorService.swift; sourceTree = "<group>"; };
+		A20008000000000000000008 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		A20016000000000000000016 /* HTTPProbeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPProbeService.swift; sourceTree = "<group>"; };
+		A20009000000000000000009 /* StatusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusViewModel.swift; sourceTree = "<group>"; };
+		A2000A00000000000000000A /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
+		A2000B00000000000000000B /* PopoverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverContentView.swift; sourceTree = "<group>"; };
+		A2000C00000000000000000C /* LatencyChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyChartView.swift; sourceTree = "<group>"; };
+		A2000D00000000000000000D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A2000E00000000000000000E /* PingOutputParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingOutputParser.swift; sourceTree = "<group>"; };
+		A2000F00000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20010000000000000000010 /* PingOutputParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingOutputParserTests.swift; sourceTree = "<group>"; };
+		A20011000000000000000011 /* PingHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingHistoryTests.swift; sourceTree = "<group>"; };
+		A20012000000000000000012 /* ConnectionWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ConnectionWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20013000000000000000013 /* ConnectionWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConnectionWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20014000000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20015000000000000000015 /* ConnectionWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ConnectionWatch.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A60001000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A60002000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A70001000000000000000001 /* = mainGroup */ = {
+			isa = PBXGroup;
+			children = (
+				A70003000000000000000003 /* ConnectionWatch */,
+				A70009000000000000000009 /* ConnectionWatchTests */,
+				A70002000000000000000002 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A70002000000000000000002 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A20012000000000000000012 /* ConnectionWatch.app */,
+				A20013000000000000000013 /* ConnectionWatchTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A70003000000000000000003 /* ConnectionWatch */ = {
+			isa = PBXGroup;
+			children = (
+				A70004000000000000000004 /* App */,
+				A70005000000000000000005 /* Models */,
+				A70006000000000000000006 /* Services */,
+				A70007000000000000000007 /* ViewModels */,
+				A70008000000000000000008 /* Views */,
+				A7000A00000000000000000A /* Utilities */,
+				A2000F00000000000000000F /* Assets.xcassets */,
+				A20014000000000000000014 /* Info.plist */,
+				A20015000000000000000015 /* ConnectionWatch.entitlements */,
+			);
+			path = ConnectionWatch;
+			sourceTree = "<group>";
+		};
+		A70004000000000000000004 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A20001000000000000000001 /* ConnectionWatchApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A70005000000000000000005 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A20002000000000000000002 /* ConnectionState.swift */,
+				A20003000000000000000003 /* PingResult.swift */,
+				A20004000000000000000004 /* PingHistory.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A70006000000000000000006 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A20005000000000000000005 /* PingService.swift */,
+				A20006000000000000000006 /* NetworkMonitor.swift */,
+				A20007000000000000000007 /* ConnectionMonitorService.swift */,
+				A20008000000000000000008 /* NotificationService.swift */,
+				A20016000000000000000016 /* HTTPProbeService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A70007000000000000000007 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A20009000000000000000009 /* StatusViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A70008000000000000000008 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A2000A00000000000000000A /* StatusItemView.swift */,
+				A2000B00000000000000000B /* PopoverContentView.swift */,
+				A2000C00000000000000000C /* LatencyChartView.swift */,
+				A2000D00000000000000000D /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A70009000000000000000009 /* ConnectionWatchTests */ = {
+			isa = PBXGroup;
+			children = (
+				A20010000000000000000010 /* PingOutputParserTests.swift */,
+				A20011000000000000000011 /* PingHistoryTests.swift */,
+			);
+			path = ConnectionWatchTests;
+			sourceTree = "<group>";
+		};
+		A7000A00000000000000000A /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				A2000E00000000000000000E /* PingOutputParser.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A40001000000000000000001 /* ConnectionWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80001000000000000000001 /* Build configuration list for PBXNativeTarget "ConnectionWatch" */;
+			buildPhases = (
+				A90001000000000000000001 /* Sources */,
+				A60001000000000000000001 /* Frameworks */,
+				AA0001000000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ConnectionWatch;
+			productName = ConnectionWatch;
+			productReference = A20012000000000000000012 /* ConnectionWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A40002000000000000000002 /* ConnectionWatchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A80002000000000000000002 /* Build configuration list for PBXNativeTarget "ConnectionWatchTests" */;
+			buildPhases = (
+				A90002000000000000000002 /* Sources */,
+				A60002000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ConnectionWatchTests;
+			productName = ConnectionWatchTests;
+			productReference = A20013000000000000000013 /* ConnectionWatchTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A50001000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1540;
+				LastUpgradeCheck = 1540;
+				TargetAttributes = {
+					A40001000000000000000001 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+					A40002000000000000000002 = {
+						CreatedOnToolsVersion = 15.4;
+					};
+				};
+			};
+			buildConfigurationList = A80003000000000000000003 /* Build configuration list for PBXProject "ConnectionWatch" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A70001000000000000000001;
+			productRefGroup = A70002000000000000000002 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A40001000000000000000001 /* ConnectionWatch */,
+				A40002000000000000000002 /* ConnectionWatchTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA0001000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000F00000000000000000F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A90001000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001000000000000000001 /* ConnectionWatchApp.swift in Sources */,
+				A10002000000000000000002 /* ConnectionState.swift in Sources */,
+				A10003000000000000000003 /* PingResult.swift in Sources */,
+				A10004000000000000000004 /* PingHistory.swift in Sources */,
+				A10005000000000000000005 /* PingService.swift in Sources */,
+				A10006000000000000000006 /* NetworkMonitor.swift in Sources */,
+				A10007000000000000000007 /* ConnectionMonitorService.swift in Sources */,
+				A10008000000000000000008 /* NotificationService.swift in Sources */,
+				A10009000000000000000009 /* StatusViewModel.swift in Sources */,
+				A1000A00000000000000000A /* StatusItemView.swift in Sources */,
+				A1000B00000000000000000B /* PopoverContentView.swift in Sources */,
+				A1000C00000000000000000C /* LatencyChartView.swift in Sources */,
+				A1000D00000000000000000D /* SettingsView.swift in Sources */,
+				A1000E00000000000000000E /* PingOutputParser.swift in Sources */,
+				A10016000000000000000016 /* HTTPProbeService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A90002000000000000000002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10010000000000000000010 /* PingOutputParserTests.swift in Sources */,
+				A10011000000000000000011 /* PingHistoryTests.swift in Sources */,
+				A10020000000000000000020 /* PingOutputParser.swift in Sources */,
+				A10021000000000000000021 /* PingHistory.swift in Sources */,
+				A10022000000000000000022 /* PingResult.swift in Sources */,
+				A10023000000000000000023 /* ConnectionState.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A30002000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A40001000000000000000001 /* ConnectionWatch */;
+			targetProxy = A30001000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		B10001000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		B10002000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		B10003000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ConnectionWatch/ConnectionWatch.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGNING_REQUIRED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ConnectionWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ConnectionWatch;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B10004000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ConnectionWatch/ConnectionWatch.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGNING_REQUIRED = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ConnectionWatch/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ConnectionWatch;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		B10005000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B10006000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CODE_SIGNING_REQUIRED = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A80001000000000000000001 /* Build configuration list for PBXNativeTarget "ConnectionWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B10003000000000000000003 /* Debug */,
+				B10004000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80002000000000000000002 /* Build configuration list for PBXNativeTarget "ConnectionWatchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B10005000000000000000005 /* Debug */,
+				B10006000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A80003000000000000000003 /* Build configuration list for PBXProject "ConnectionWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B10001000000000000000001 /* Debug */,
+				B10002000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A50001000000000000000001 /* Project object */;
+}
