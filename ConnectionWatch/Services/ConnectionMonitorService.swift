@@ -55,6 +55,7 @@ final class ConnectionMonitorService {
         pollingTask?.cancel()
         pollingTask = nil
         networkMonitor.stop()
+        notificationService.setStateProvider { .disconnected }
     }
 
     private func performProbes() async {
@@ -87,9 +88,8 @@ final class ConnectionMonitorService {
         }
 
         // HTTP failed — check if ping works (partial connectivity)
-        if let pingLatency = ping.latency {
+        if ping.latency != nil {
             // Network layer works but application layer doesn't
-            if pingLatency < 100 { return .degraded }
             return .degraded
         }
 
