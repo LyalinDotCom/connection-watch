@@ -25,7 +25,9 @@ actor PingService {
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 process.terminationHandler = { _ in
-                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    let fileHandle = pipe.fileHandleForReading
+                    let data = fileHandle.readDataToEndOfFile()
+                    try? fileHandle.close()
                     let output = String(data: data, encoding: .utf8) ?? ""
                     continuation.resume(returning: output)
                 }

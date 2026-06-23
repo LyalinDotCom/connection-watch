@@ -106,6 +106,7 @@ struct LatencyChartView: View {
 
     private var maxChartValue: Double {
         let maxLatency = history.maxLatency ?? degradedThreshold
-        return max(maxLatency * 1.2, goodThreshold * 2)
+        let calculatedMax = max(maxLatency * 1.2, goodThreshold * 2)
+        return calculatedMax > 10 ? calculatedMax : 200.0
     }
 }
