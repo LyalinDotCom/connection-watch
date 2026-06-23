@@ -28,6 +28,14 @@ final class StatusViewModel {
         }
     }
 
+    var notificationsEnabled: Bool {
+        get { monitor.notificationsEnabled }
+        set {
+            monitor.notificationsEnabled = newValue
+            UserDefaults.standard.set(newValue, forKey: "notificationsEnabled")
+        }
+    }
+
     var pingTarget: String {
         get { monitor.pingTarget }
         set {

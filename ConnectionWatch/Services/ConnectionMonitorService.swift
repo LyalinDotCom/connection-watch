@@ -22,11 +22,21 @@ final class ConnectionMonitorService {
     var goodThreshold: Double = UserDefaults.standard.double(forKey: "goodThreshold").clamped(to: 50...2000, default: 200)
     @ObservationIgnored
     var degradedThreshold: Double = UserDefaults.standard.double(forKey: "degradedThreshold").clamped(to: 100...5000, default: 1000)
+    @ObservationIgnored
+    var notificationsEnabled: Bool = UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool ?? true {
+        didSet {
+            if notificationsEnabled {
+                notificationService.requestAuthorization()
+            }
+        }
+    }
 
     func start() {
         guard !isMonitoring else { return }
         isMonitoring = true
-        notificationService.requestAuthorization()
+        if notificationsEnabled {
+            notificationService.requestAuthorization()
+        }
         notificationService.setStateProvider { [weak self] in
             self?.currentState ?? .disconnected
         }
@@ -99,7 +109,9 @@ final class ConnectionMonitorService {
 
     private func updateState(_ newState: ConnectionState) {
         currentState = newState
-        notificationService.notify(state: newState)
+        if notificationsEnabled {
+            notificationService.notify(state: newState)
+        }
     }
 }
 

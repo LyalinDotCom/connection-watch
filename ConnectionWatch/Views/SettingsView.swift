@@ -14,6 +14,10 @@ struct SettingsView: View {
                 .toggleStyle(.switch)
                 .controlSize(.small)
 
+            Toggle("Enable Notifications", isOn: $viewModel.notificationsEnabled)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+
             LabeledContent("Ping Target") {
                 TextField("IP or hostname", text: $viewModel.pingTarget)
                     .textFieldStyle(.roundedBorder)
