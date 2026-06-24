@@ -52,8 +52,8 @@ final class ConnectionMonitorService {
         networkMonitor.start()
 
         pollingTask = Task { [weak self] in
-            guard let self else { return }
             while !Task.isCancelled {
+                guard let self = self else { break }
                 await self.performProbes()
                 try? await Task.sleep(for: .seconds(self.pingInterval))
             }
@@ -111,6 +111,16 @@ final class ConnectionMonitorService {
         currentState = newState
         if notificationsEnabled {
             notificationService.notify(state: newState)
+        }
+    }
+
+    deinit {
+        // Ensure monitoring is stopped and references are cleared on deinit
+        let monitor = networkMonitor
+        let task = pollingTask
+        Task { @MainActor in
+            task?.cancel()
+            monitor.stop()
         }
     }
 }
