@@ -11,7 +11,8 @@ struct NetworkHealthTests {
             httpLatency: 45.0,
             downloadSpeedMbps: nil,
             goodThreshold: 150.0,
-            degradedThreshold: 600.0
+            degradedThreshold: 600.0,
+            isICMPBlocked: false
         )
 
         #expect(health.state == .good)
@@ -120,7 +121,8 @@ struct NetworkHealthTests {
             httpLatency: 50.0,
             downloadSpeedMbps: 0.5, // Even a slow on-demand speed test must not penalize health
             goodThreshold: 150.0,
-            degradedThreshold: 600.0
+            degradedThreshold: 600.0,
+            isICMPBlocked: false
         )
 
         #expect(health.state == .good)
@@ -138,7 +140,8 @@ struct NetworkHealthTests {
             httpLatency: 310.0,
             downloadSpeedMbps: nil,
             goodThreshold: 150.0,
-            degradedThreshold: 600.0
+            degradedThreshold: 600.0,
+            isICMPBlocked: false
         )
 
         #expect(health.state == .degraded)
@@ -155,7 +158,8 @@ struct NetworkHealthTests {
             httpLatency: 40.0,
             downloadSpeedMbps: nil,
             goodThreshold: 150.0,
-            degradedThreshold: 600.0
+            degradedThreshold: 600.0,
+            isICMPBlocked: false
         )
         #expect(offlineHealth.state == .disconnected)
         #expect(offlineHealth.score == 0)
@@ -168,7 +172,8 @@ struct NetworkHealthTests {
             httpLatency: nil,
             downloadSpeedMbps: nil,
             goodThreshold: 150.0,
-            degradedThreshold: 600.0
+            degradedThreshold: 600.0,
+            isICMPBlocked: false
         )
         #expect(probesFailedHealth.state == .disconnected)
         #expect(probesFailedHealth.score == 0)

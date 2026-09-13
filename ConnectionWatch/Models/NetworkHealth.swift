@@ -37,7 +37,7 @@ struct NetworkHealth: Sendable, Equatable {
         downloadSpeedMbps: Double?,
         goodThreshold: Double,
         degradedThreshold: Double,
-        isICMPBlocked: Bool? = nil,
+        isICMPBlocked: Bool,
         previousState: ConnectionState = .good
     ) -> NetworkHealth {
         // Offline check: link down OR both ping and HTTP failed
@@ -56,13 +56,6 @@ struct NetworkHealth: Sendable, Equatable {
                 recentPacketLoss: recentPacketLoss
             )
         }
-
-        // Single source of truth for ICMP-blocked network detection
-        let icmpBlocked = isICMPBlocked ?? (
-            pingLatency == nil
-            && recentPacketLoss >= 99
-            && httpLatency != nil
-        )
 
         var reasons: [String] = []
         var informationalNote = false
@@ -85,14 +78,14 @@ struct NetworkHealth: Sendable, Equatable {
             }
         } else {
             pingScore = 50
-            if !icmpBlocked {
+            if !isICMPBlocked {
                 reasons.append("ICMP ping timeout")
             }
         }
 
         // 2. Stability Score (Packet Loss & Jitter) (0-100) — Weight: 35%
         var stabilityScore: Double = 100
-        if !icmpBlocked && recentPacketLoss > 0 {
+        if !isICMPBlocked && recentPacketLoss > 0 {
             stabilityScore -= min(85, recentPacketLoss * 2.5)
             if recentPacketLoss >= 5 {
                 reasons.append(String(format: "Packet loss (%.0f%%)", recentPacketLoss))
@@ -131,7 +124,7 @@ struct NetworkHealth: Sendable, Equatable {
 
         // Weighted composite
         var rawScore: Double
-        if icmpBlocked {
+        if isICMPBlocked {
             rawScore = httpScore
             if reasons.isEmpty {
                 reasons.append("ICMP filtered (using HTTP only)")
@@ -171,7 +164,7 @@ struct NetworkHealth: Sendable, Equatable {
             ratingLabel = "Poor"
         }
 
-        let effectiveLoss = icmpBlocked ? 0.0 : recentPacketLoss
+        let effectiveLoss = isICMPBlocked ? 0.0 : recentPacketLoss
 
         return NetworkHealth(
             score: finalScore,
@@ -179,7 +172,7 @@ struct NetworkHealth: Sendable, Equatable {
             ratingLabel: ratingLabel,
             reasons: reasons,
             isInformationalNoteOnly: informationalNote && state == .good,
-            isICMPBlocked: icmpBlocked,
+            isICMPBlocked: isICMPBlocked,
             pingLatency: pingLatency,
             jitter: jitter,
             httpLatency: httpLatency,

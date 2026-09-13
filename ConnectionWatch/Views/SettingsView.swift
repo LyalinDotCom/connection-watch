@@ -11,8 +11,8 @@ struct SettingsView: View {
     @State private var validationMessage: String?
 
     private var appVersionString: String {
-        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.5"
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "9"
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.6"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "10"
         return "v\(shortVersion) (build \(buildNumber))"
     }
 
