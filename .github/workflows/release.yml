@@ -1,0 +1,205 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialize runs on main so two quick pushes can't race to create the same tag.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build, Test & Release
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so we can diff against the previous tag
+
+      - name: Show toolchain
+        run: |
+          for xc in /Applications/Xcode*.app; do [ -e "$xc" ] && echo "available: $xc"; done
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+          swift --version
+
+      - name: Resolve version
+        id: version
+        run: |
+          set -euo pipefail
+          SETTINGS=$(xcodebuild -project ConnectionWatch.xcodeproj \
+                                -target ConnectionWatch \
+                                -configuration Release \
+                                -showBuildSettings 2>/dev/null)
+          MARKETING=$(echo "$SETTINGS" | awk -F' = ' '/^ *MARKETING_VERSION/    {gsub(/ /,"",$2); print $2; exit}')
+          BUILDNUM=$( echo "$SETTINGS" | awk -F' = ' '/^ *CURRENT_PROJECT_VERSION/ {gsub(/ /,"",$2); print $2; exit}')
+
+          if [ -z "$MARKETING" ] || [ -z "$BUILDNUM" ]; then
+            echo "::error::Could not read MARKETING_VERSION / CURRENT_PROJECT_VERSION from the project"
+            exit 1
+          fi
+
+          TAG="v${MARKETING}-build${BUILDNUM}"
+          {
+            echo "marketing=${MARKETING}"
+            echo "build=${BUILDNUM}"
+            echo "tag=${TAG}"
+            echo "zip=ConnectionWatch-${MARKETING}.zip"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Version ${MARKETING} (build ${BUILDNUM}) -> tag ${TAG}"
+
+      - name: Check whether this release already exists
+        id: gate
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release $TAG already exists - build and test will run, publishing will be skipped. Bump MARKETING_VERSION / CURRENT_PROJECT_VERSION to cut a new release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ConnectionWatch.xcodeproj \
+            -scheme ConnectionWatchTests \
+            -destination 'platform=macOS' \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Build Release (universal arm64 + x86_64)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project ConnectionWatch.xcodeproj \
+            -scheme ConnectionWatch \
+            -configuration Release \
+            -derivedDataPath build/dd \
+            -destination 'generic/platform=macOS' \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Verify the built app
+        env:
+          MARKETING: ${{ steps.version.outputs.marketing }}
+          BUILDNUM: ${{ steps.version.outputs.build }}
+        run: |
+          set -euo pipefail
+          APP="build/dd/Build/Products/Release/ConnectionWatch.app"
+          test -d "$APP" || { echo "::error::$APP not found"; exit 1; }
+
+          # The shipped Info.plist must agree with what we tagged.
+          PLIST_SHORT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
+          PLIST_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion"            "$APP/Contents/Info.plist")
+          if [ "$PLIST_SHORT" != "$MARKETING" ] || [ "$PLIST_BUILD" != "$BUILDNUM" ]; then
+            echo "::error::Version mismatch - project says ${MARKETING} (${BUILDNUM}), bundle says ${PLIST_SHORT} (${PLIST_BUILD})"
+            exit 1
+          fi
+
+          # Must be universal, or Intel Macs get a build they cannot run.
+          lipo -info "$APP/Contents/MacOS/ConnectionWatch"
+          lipo -info "$APP/Contents/MacOS/ConnectionWatch" | grep -q 'x86_64' || { echo "::error::missing x86_64 slice"; exit 1; }
+          lipo -info "$APP/Contents/MacOS/ConnectionWatch" | grep -q 'arm64'  || { echo "::error::missing arm64 slice";  exit 1; }
+
+          # Ad-hoc signature is required for the app to launch on Apple Silicon at all.
+          codesign --verify --deep --strict --verbose=2 "$APP"
+
+      - name: Package
+        env:
+          ZIP: ${{ steps.version.outputs.zip }}
+        run: |
+          set -euo pipefail
+          # ditto (not zip) so bundle symlinks, resource forks and the signature survive.
+          ditto -c -k --keepParent --sequesterRsrc \
+            "build/dd/Build/Products/Release/ConnectionWatch.app" "$ZIP"
+          ls -lh "$ZIP"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ConnectionWatch-${{ steps.version.outputs.marketing }}-build${{ steps.version.outputs.build }}
+          path: ${{ steps.version.outputs.zip }}
+          if-no-files-found: error
+
+      - name: Compose release notes
+        if: github.event_name != 'pull_request' && steps.gate.outputs.exists == 'false'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          MARKETING: ${{ steps.version.outputs.marketing }}
+          BUILDNUM: ${{ steps.version.outputs.build }}
+          ZIP: ${{ steps.version.outputs.zip }}
+        run: |
+          set -euo pipefail
+          PREV_TAG=$(git tag --list 'v*' --sort=-creatordate | head -n 1 || true)
+
+          {
+            echo "## ConnectionWatch ${MARKETING} (build ${BUILDNUM})"
+            echo
+            echo "A macOS menu-bar connection monitor. Universal binary — Apple Silicon and Intel."
+            echo
+            echo "### Install"
+            echo
+            echo "1. Download \`${ZIP}\` below and unzip it."
+            echo "2. Drag **ConnectionWatch.app** into your **Applications** folder."
+            echo "3. **First launch only:** right-click the app → **Open** → **Open**."
+            echo
+            echo "> [!IMPORTANT]"
+            echo "> This build is ad-hoc signed, not notarized by Apple, so macOS Gatekeeper blocks it on first launch."
+            echo "> If you see *\"ConnectionWatch is damaged and can't be opened\"*, clear the quarantine flag:"
+            echo "> \`\`\`"
+            echo "> xattr -dr com.apple.quarantine /Applications/ConnectionWatch.app"
+            echo "> \`\`\`"
+            echo
+            echo "### Changes"
+            echo
+            # `git log -n` rather than `| head -n`: under `set -o pipefail` a SIGPIPE
+            # from head would abort the whole step once history outgrows the limit.
+            if [ -n "$PREV_TAG" ]; then
+              git log --no-merges --pretty='- %s' -n 50 "${PREV_TAG}..HEAD"
+              echo
+              echo "**Full diff:** [\`${PREV_TAG}...${TAG}\`](${{ github.server_url }}/${{ github.repository }}/compare/${PREV_TAG}...${TAG})"
+            else
+              git log --no-merges --pretty='- %s' -n 20
+            fi
+            echo
+            echo "---"
+            echo "Built from \`${GITHUB_SHA:0:7}\` by [run #${GITHUB_RUN_NUMBER}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${GITHUB_RUN_ID})."
+          } > RELEASE_NOTES.md
+
+          cat RELEASE_NOTES.md
+
+      - name: Publish release
+        if: github.event_name != 'pull_request' && steps.gate.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          MARKETING: ${{ steps.version.outputs.marketing }}
+          BUILDNUM: ${{ steps.version.outputs.build }}
+          ZIP: ${{ steps.version.outputs.zip }}
+        run: |
+          set -euo pipefail
+          gh release create "$TAG" "$ZIP" \
+            --target "$GITHUB_SHA" \
+            --title "v${MARKETING} (build ${BUILDNUM})" \
+            --notes-file RELEASE_NOTES.md
+          echo "::notice::Published $TAG"
+          gh release view "$TAG" --json url --jq .url
