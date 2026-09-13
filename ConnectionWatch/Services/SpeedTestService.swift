@@ -22,53 +22,49 @@ actor SpeedTestService {
     /// Records the cumulative bytes downloaded across all stages so the UI can report exact bandwidth usage.
     func measureDownloadSpeed() async -> PingResult {
         let timestamp = Date()
-        var totalBytes = 0
-        var bestMbps: Double?
-        var bestLatency: Double?
 
-        // Stage 1: 1 MB warmup probe
-        if let stage1 = await downloadProbe(urlString: Self.warmupPayloadURL) {
-            totalBytes += stage1.bytesTransferred ?? 0
-            bestMbps = stage1.downloadSpeedMbps
-            bestLatency = stage1.latency
-
-            // Stage 2: 10 MB sustained probe if link is > 4 Mbps
-            if let mbps1 = stage1.downloadSpeedMbps, mbps1 > 4.0, !Task.isCancelled {
-                if let stage2 = await downloadProbe(urlString: Self.standardPayloadURL) {
-                    totalBytes += stage2.bytesTransferred ?? 0
-                    if let mbps2 = stage2.downloadSpeedMbps {
-                        bestMbps = max(bestMbps ?? 0, mbps2)
-                    }
-                    bestLatency = stage2.latency ?? bestLatency
-
-                    // Stage 3: 25 MB high-speed sustained probe if link is > 30 Mbps
-                    if let mbps2 = stage2.downloadSpeedMbps, mbps2 > 30.0, !Task.isCancelled {
-                        if let stage3 = await downloadProbe(urlString: Self.largePayloadURL) {
-                            totalBytes += stage3.bytesTransferred ?? 0
-                            if let mbps3 = stage3.downloadSpeedMbps {
-                                bestMbps = max(bestMbps ?? 0, mbps3)
-                            }
-                            bestLatency = stage3.latency ?? bestLatency
-                        }
-                    }
-                }
-            }
-
+        // Stage 1 calibrates the link. If it fails there is nothing measured to report,
+        // and nothing was transferred.
+        guard let calibration = await downloadProbe(urlString: Self.warmupPayloadURL) else {
             return PingResult(
                 timestamp: timestamp,
-                latency: bestLatency,
-                downloadSpeedMbps: bestMbps,
-                bytesTransferred: totalBytes,
+                latency: nil,
+                downloadSpeedMbps: nil,
+                bytesTransferred: nil,
                 endpoint: "speed.cloudflare.com",
                 probeType: .speed
             )
         }
 
+        var totalBytes = calibration.bytesTransferred ?? 0
+        var bestMbps = calibration.downloadSpeedMbps
+        var bestLatency = calibration.latency
+
+        // Each stage only runs if the previous one measured fast enough to justify the
+        // extra bandwidth, so slow links never download the larger payloads.
+        let escalation = [
+            (minimumMbps: 4.0, url: Self.standardPayloadURL),
+            (minimumMbps: 30.0, url: Self.largePayloadURL),
+        ]
+
+        var previousMbps = calibration.downloadSpeedMbps
+        for stage in escalation {
+            guard let mbps = previousMbps, mbps > stage.minimumMbps, !Task.isCancelled else { break }
+            guard let result = await downloadProbe(urlString: stage.url) else { break }
+
+            totalBytes += result.bytesTransferred ?? 0
+            if let measured = result.downloadSpeedMbps {
+                bestMbps = max(bestMbps ?? 0, measured)
+            }
+            bestLatency = result.latency ?? bestLatency
+            previousMbps = result.downloadSpeedMbps
+        }
+
         return PingResult(
             timestamp: timestamp,
-            latency: nil,
-            downloadSpeedMbps: nil,
-            bytesTransferred: totalBytes > 0 ? totalBytes : nil,
+            latency: bestLatency,
+            downloadSpeedMbps: bestMbps,
+            bytesTransferred: totalBytes,
             endpoint: "speed.cloudflare.com",
             probeType: .speed
         )
