@@ -17,6 +17,7 @@ final class StatusViewModel {
     var latestHTTPEndpoint: String? { monitor.history.latestHTTP?.endpoint }
     var latestDownloadSpeedMbps: Double? { monitor.history.latestDownloadSpeedMbps }
     var latestDownloadSpeedDate: Date? { monitor.history.latestSpeed?.timestamp }
+    var latestSpeedBytesTransferred: Int? { monitor.history.latestSpeed?.bytesTransferred }
     var recentPacketLoss: Double { monitor.history.recentPacketLoss(window: 8) }
 
     var interfaceName: String { monitor.interfaceName }

@@ -4,6 +4,8 @@ struct PopoverContentView: View {
     @Bindable var viewModel: StatusViewModel
 
     @State private var showSettings = false
+    @State private var showSpeedTestConfirm = false
+    @State private var isHoveringSpeedResult = false
 
     var body: some View {
         ZStack {
@@ -202,38 +204,72 @@ struct PopoverContentView: View {
 
             Spacer(minLength: 0)
 
-            // 6. Bottom Action Button Bar (Test Speed & Quit)
-            HStack(spacing: 8) {
-                Button {
-                    viewModel.runSpeedTestNow()
-                } label: {
-                    HStack(spacing: 5) {
-                        if viewModel.isTestingSpeed {
-                            ProgressView()
-                                .controlSize(.small)
-                                .scaleEffect(0.65)
-                        } else {
-                            Image(systemName: "speedometer")
+            // 6. Bottom Action Bar or Speed Test Confirmation Prompt
+            if showSpeedTestConfirm {
+                HStack(spacing: 8) {
+                    Image(systemName: "speedometer")
+                        .foregroundStyle(.indigo)
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("Uses up to ~36 MB")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    Spacer()
+
+                    Button("Cancel") {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.82)) {
+                            showSpeedTestConfirm = false
                         }
-                        Text(viewModel.isTestingSpeed ? "Testing..." : "Test Speed")
                     }
-                }
-                .buttonStyle(ModernMacButtonStyle(prominent: true, tintColor: .indigo))
-                .disabled(viewModel.isTestingSpeed || viewModel.isPaused)
-                .help("Run on-demand download speed probe")
+                    .buttonStyle(ModernMacButtonStyle())
+                    .keyboardShortcut(.cancelAction)
 
-                Spacer()
-
-                Button {
-                    NSApplication.shared.terminate(nil)
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "power")
-                        Text("Quit")
+                    Button("Start Test") {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.82)) {
+                            showSpeedTestConfirm = false
+                        }
+                        viewModel.runSpeedTestNow()
                     }
+                    .buttonStyle(ModernMacButtonStyle(prominent: true, tintColor: .indigo))
+                    .keyboardShortcut(.defaultAction)
                 }
-                .buttonStyle(ModernMacButtonStyle())
-                .keyboardShortcut("q", modifiers: .command)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else {
+                HStack(spacing: 8) {
+                    Button {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.82)) {
+                            showSpeedTestConfirm = true
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            if viewModel.isTestingSpeed {
+                                ProgressView()
+                                    .controlSize(.small)
+                                    .scaleEffect(0.65)
+                            } else {
+                                Image(systemName: "speedometer")
+                            }
+                            Text(viewModel.isTestingSpeed ? "Testing..." : "Test Speed")
+                        }
+                    }
+                    .buttonStyle(ModernMacButtonStyle(prominent: true, tintColor: .indigo))
+                    .disabled(viewModel.isTestingSpeed || viewModel.isPaused)
+                    .help("Run multi-stage download benchmark")
+
+                    Spacer()
+
+                    Button {
+                        NSApplication.shared.terminate(nil)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "power")
+                            Text("Quit")
+                        }
+                    }
+                    .buttonStyle(ModernMacButtonStyle())
+                    .keyboardShortcut("q", modifiers: .command)
+                }
+                .transition(.opacity)
             }
         }
     }
@@ -353,11 +389,18 @@ struct PopoverContentView: View {
                     .foregroundStyle(.secondary)
             }
 
-            if let date = viewModel.latestDownloadSpeedDate {
+            if isHoveringSpeedResult, let bytes = viewModel.latestSpeedBytesTransferred {
+                Text("Used \(formattedBytes(bytes))")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .transition(.opacity)
+            } else if let date = viewModel.latestDownloadSpeedDate {
                 Text(relativeAgeString(from: date))
                     .font(.system(size: 10))
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
+                    .transition(.opacity)
             } else {
                 Text("Not tested yet")
                     .font(.system(size: 10))
@@ -367,6 +410,16 @@ struct PopoverContentView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .staticMetricCard()
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.14)) {
+                isHoveringSpeedResult = hovering
+            }
+        }
+        .help(
+            viewModel.latestSpeedBytesTransferred.map {
+                "Last speed test transferred \(formattedBytes($0)) of data"
+            } ?? "Speed test has not been run yet"
+        )
     }
 
     private func statBadge(_ label: String, value: Double?) -> some View {
@@ -396,5 +449,10 @@ struct PopoverContentView: View {
         } else {
             return "\(elapsed / 60)m ago"
         }
+    }
+
+    private func formattedBytes(_ bytes: Int) -> String {
+        let mb = Double(bytes) / 1_000_000.0
+        return String(format: "%.1f MB", mb)
     }
 }

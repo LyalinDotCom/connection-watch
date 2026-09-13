@@ -13,6 +13,7 @@ struct PingResult: Identifiable, Sendable {
     let jitter: Double?           // stddev in ms from ping burst
     let packetLossPercent: Double? // 0...100 from ping burst
     let downloadSpeedMbps: Double? // download throughput in Mbps
+    let bytesTransferred: Int?     // total bytes downloaded during speed test
     let endpoint: String?
     let probeType: ProbeType
 
@@ -22,6 +23,7 @@ struct PingResult: Identifiable, Sendable {
         jitter: Double? = nil,
         packetLossPercent: Double? = nil,
         downloadSpeedMbps: Double? = nil,
+        bytesTransferred: Int? = nil,
         endpoint: String? = nil,
         probeType: ProbeType = .ping
     ) {
@@ -30,6 +32,7 @@ struct PingResult: Identifiable, Sendable {
         self.jitter = jitter
         self.packetLossPercent = packetLossPercent
         self.downloadSpeedMbps = downloadSpeedMbps
+        self.bytesTransferred = bytesTransferred
         self.endpoint = endpoint
         self.probeType = probeType
     }
