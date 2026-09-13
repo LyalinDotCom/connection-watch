@@ -22,11 +22,12 @@ final class ConnectionMonitorService {
     private var pollingTask: Task<Void, Never>?
     private var speedTestTask: Task<Void, Never>?
     private var lastPathChangeDate: Date = .distantPast
+    private var probeGeneration: Int = 0
 
     @ObservationIgnored
     var pingTarget: String = UserDefaults.standard.string(forKey: "pingTarget") ?? "1.1.1.1" {
         didSet {
-            if isMonitoring && !isPaused {
+            if isMonitoring && !isPaused && pingTarget != oldValue {
                 refreshNow()
             }
         }
@@ -35,7 +36,7 @@ final class ConnectionMonitorService {
     @ObservationIgnored
     var pingInterval: TimeInterval = UserDefaults.standard.double(forKey: "pingInterval").clamped(to: 5...120, default: 10) {
         didSet {
-            if isMonitoring && !isPaused {
+            if isMonitoring && !isPaused && pingInterval != oldValue {
                 restartPollingLoop()
             }
         }
@@ -107,6 +108,7 @@ final class ConnectionMonitorService {
         pollingTask = nil
         speedTestTask?.cancel()
         speedTestTask = nil
+        isProbing = false
         currentState = .paused
     }
 
@@ -162,9 +164,15 @@ final class ConnectionMonitorService {
     }
 
     private func performProbes() async {
-        guard !isProbing, !isPaused else { return }
+        guard !isPaused else { return }
+        probeGeneration += 1
+        let myGeneration = probeGeneration
         isProbing = true
-        defer { isProbing = false }
+        defer {
+            if probeGeneration == myGeneration {
+                isProbing = false
+            }
+        }
 
         // Run passive Ping burst and HTTP HEAD probe in parallel (~100 bytes total)
         async let pingResult = pingService.ping(target: pingTarget)
@@ -173,7 +181,7 @@ final class ConnectionMonitorService {
         let ping = await pingResult
         let http = await httpResult
 
-        guard !isPaused else { return }
+        guard !Task.isCancelled, !isPaused, probeGeneration == myGeneration else { return }
 
         history.append(ping)
         history.append(http)
@@ -202,13 +210,13 @@ final class ConnectionMonitorService {
         let latestPing = history.latestPing
         let latestHTTP = history.latestHTTP
         let latestSpeed = history.latestDownloadSpeedMbps
-        let recentLoss = history.recentPacketLoss(window: 8)
+        let rawPingLoss = history.rawRecentPingPacketLoss(window: 8)
 
         let evaluated = NetworkHealth.evaluate(
             isConnected: networkMonitor.isConnected,
             pingLatency: latestPing?.latency,
             jitter: latestPing?.jitter,
-            recentPacketLoss: recentLoss,
+            recentPacketLoss: rawPingLoss,
             httpLatency: latestHTTP?.latency,
             downloadSpeedMbps: latestSpeed,
             goodThreshold: goodThreshold,

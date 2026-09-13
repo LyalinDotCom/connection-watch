@@ -28,6 +28,16 @@ struct PingHistory: Sendable {
         latestPing?.jitter
     }
 
+    /// True if all recent ping probes failed while recent HTTP probes succeeded (ICMP filtered).
+    var isICMPLikelyBlocked: Bool {
+        let recentPings = buffer.filter { $0.probeType == .ping }.suffix(4)
+        let recentHTTPs = buffer.filter { $0.probeType == .http }.suffix(4)
+        guard !recentPings.isEmpty, !recentHTTPs.isEmpty else { return false }
+        let allPingsFailed = recentPings.allSatisfy { !$0.succeeded }
+        let anyHTTPSucceeded = recentHTTPs.contains { $0.succeeded }
+        return allPingsFailed && anyHTTPSucceeded
+    }
+
     func entries(ofType type: ProbeType) -> [PingResult] {
         buffer.filter { $0.probeType == type }
     }
@@ -36,30 +46,37 @@ struct PingHistory: Sendable {
         buffer.filter { $0.succeeded }
     }
 
+    private var primaryLatencyEntries: [Double] {
+        let pingLatencies = buffer.filter { $0.probeType == .ping }.compactMap(\.latency)
+        if !pingLatencies.isEmpty {
+            return pingLatencies
+        }
+        return buffer.filter { $0.probeType == .http }.compactMap(\.latency)
+    }
+
     var averageLatency: Double? {
-        let latencies = buffer.filter { $0.probeType != .speed }.compactMap(\.latency)
+        let latencies = primaryLatencyEntries
         guard !latencies.isEmpty else { return nil }
         return latencies.reduce(0, +) / Double(latencies.count)
     }
 
     var minLatency: Double? {
-        buffer.filter { $0.probeType != .speed }.compactMap(\.latency).min()
+        primaryLatencyEntries.min()
     }
 
     var maxLatency: Double? {
-        buffer.filter { $0.probeType != .speed }.compactMap(\.latency).max()
+        primaryLatencyEntries.max()
     }
 
     var packetLoss: Double {
-        let relevant = buffer.filter { $0.probeType != .speed }
-        guard !relevant.isEmpty else { return 0 }
-        let failed = relevant.filter { !$0.succeeded }.count
-        return Double(failed) / Double(relevant.count) * 100
+        let pings = buffer.filter { $0.probeType == .ping }
+        guard !pings.isEmpty else { return 0 }
+        let failed = pings.filter { !$0.succeeded }.count
+        return Double(failed) / Double(pings.count) * 100
     }
 
-    /// Calculates packet loss percentage over the most recent `window` ping probes
-    /// so sudden network degradation is detected immediately.
-    func recentPacketLoss(window: Int = 8) -> Double {
+    /// Raw packet loss over the most recent `window` ICMP ping probes (used for ICMP-blocked detection).
+    func rawRecentPingPacketLoss(window: Int = 8) -> Double {
         let pingEntries = buffer.filter { $0.probeType == .ping }.suffix(window)
         guard !pingEntries.isEmpty else { return 0 }
         var totalLoss: Double = 0
@@ -71,6 +88,19 @@ struct PingHistory: Sendable {
             }
         }
         return totalLoss / Double(pingEntries.count)
+    }
+
+    /// Effective packet loss percentage over the most recent `window` probes.
+    /// If ICMP is blocked (all pings fail while HTTP succeeds), falls back to HTTP probe failure rate.
+    func recentPacketLoss(window: Int = 8) -> Double {
+        let pingLoss = rawRecentPingPacketLoss(window: window)
+        if pingLoss >= 99.0 && isICMPLikelyBlocked {
+            let httpEntries = buffer.filter { $0.probeType == .http }.suffix(window)
+            guard !httpEntries.isEmpty else { return 0 }
+            let failedHTTP = httpEntries.filter { !$0.succeeded }.count
+            return Double(failedHTTP) / Double(httpEntries.count) * 100.0
+        }
+        return pingLoss
     }
 
     func averageLatency(ofType type: ProbeType) -> Double? {

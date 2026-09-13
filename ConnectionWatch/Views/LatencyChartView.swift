@@ -10,6 +10,7 @@ struct LatencyChartView: View {
         Chart {
             let httpEntries = history.entries(ofType: .http)
             let pingEntries = history.entries(ofType: .ping)
+            let icmpBlocked = history.isICMPLikelyBlocked
 
             // HTTP probes — blue
             ForEach(httpEntries.filter(\.succeeded)) { entry in
@@ -50,8 +51,16 @@ struct LatencyChartView: View {
                 .lineStyle(StrokeStyle(lineWidth: 1))
             }
 
-            // Failed probes — red dots
-            ForEach(history.entries.filter { !$0.succeeded }) { entry in
+            // Failed probes — red dots (exclude .speed entries, and ignore ICMP failures if ICMP is filtered)
+            let failedEntries = history.entries.filter { entry in
+                guard entry.probeType != .speed, !entry.succeeded else { return false }
+                if icmpBlocked && entry.probeType == .ping {
+                    return false
+                }
+                return true
+            }
+
+            ForEach(failedEntries) { entry in
                 PointMark(
                     x: .value("Time", entry.timestamp),
                     y: .value("Latency", maxChartValue)

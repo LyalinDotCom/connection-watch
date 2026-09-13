@@ -39,6 +39,23 @@ struct NetworkHealthTests {
         #expect(health.reasons == ["ICMP filtered (using HTTP only)"])
     }
 
+    @Test func transientPingTimeoutDegradesConnection() {
+        let health = NetworkHealth.evaluate(
+            isConnected: true,
+            pingLatency: nil,
+            jitter: nil,
+            recentPacketLoss: 12.5, // 1 failed ping out of 8 — not ICMP blocked
+            httpLatency: 40.0,
+            downloadSpeedMbps: nil,
+            goodThreshold: 150.0,
+            degradedThreshold: 600.0
+        )
+
+        #expect(health.state == .degraded)
+        #expect(health.score == 67)
+        #expect(health.reasons.contains("ICMP ping timeout"))
+    }
+
     @Test func downloadSpeedDoesNotDragDownHealthScore() {
         let health = NetworkHealth.evaluate(
             isConnected: true,

@@ -138,8 +138,8 @@ struct NetworkHealth: Sendable, Equatable {
             // Critical caps so severe issues always trigger Degraded state
             if httpLatency == nil || recentPacketLoss >= 15 {
                 rawScore = min(rawScore, 58)
-            } else if (pingLatency ?? 0) > goodThreshold || (httpLatency ?? 0) > goodThreshold || recentPacketLoss >= 5 {
-                rawScore = min(rawScore, 68)
+            } else if pingLatency == nil || (pingLatency ?? 0) > goodThreshold || (httpLatency ?? 0) > goodThreshold || recentPacketLoss >= 5 {
+                rawScore = min(rawScore, 67)
             }
         }
 

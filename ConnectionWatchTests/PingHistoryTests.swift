@@ -52,6 +52,19 @@ struct PingHistoryTests {
         #expect(history.packetLoss == 50.0)
     }
 
+    @Test func icmpBlockedRecentPacketLossFallsBackToHTTP() {
+        var history = PingHistory()
+        for _ in 0..<4 {
+            history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
+            history.append(PingResult(timestamp: Date(), latency: 42.0, probeType: .http))
+        }
+
+        #expect(history.isICMPLikelyBlocked == true)
+        #expect(history.rawRecentPingPacketLoss() == 100.0)
+        #expect(history.recentPacketLoss() == 0.0)
+        #expect(history.averageLatency == 42.0)
+    }
+
     @Test func emptyHistoryReturnsNilStats() {
         let history = PingHistory()
         #expect(history.averageLatency == nil)
