@@ -48,6 +48,12 @@ struct PingHistory: Sendable {
     }
 
     private var primaryLatencyEntries: [Double] {
+        if isICMPLikelyBlocked {
+            let httpLatencies = buffer.filter { $0.probeType == .http }.compactMap(\.latency)
+            if !httpLatencies.isEmpty {
+                return httpLatencies
+            }
+        }
         let pingLatencies = buffer.filter { $0.probeType == .ping }.compactMap(\.latency)
         if !pingLatencies.isEmpty {
             return pingLatencies
@@ -78,8 +84,15 @@ struct PingHistory: Sendable {
         }
         let pings = buffer.filter { $0.probeType == .ping }
         guard !pings.isEmpty else { return 0 }
-        let failed = pings.filter { !$0.succeeded }.count
-        return Double(failed) / Double(pings.count) * 100
+        var totalLoss: Double = 0
+        for entry in pings {
+            if let explicitLoss = entry.packetLossPercent {
+                totalLoss += explicitLoss
+            } else {
+                totalLoss += entry.succeeded ? 0.0 : 100.0
+            }
+        }
+        return totalLoss / Double(pings.count)
     }
 
     /// Raw packet loss over the most recent `window` ICMP ping probes.

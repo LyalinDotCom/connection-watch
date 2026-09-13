@@ -15,8 +15,8 @@ struct SettingsView: View {
     }
 
     private var appVersionString: String {
-        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "14"
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.2"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "16"
         return "v\(shortVersion) (build \(buildNumber))"
     }
 
@@ -25,8 +25,6 @@ struct SettingsView: View {
             // Top Navigation Header Bar
             HStack(spacing: 8) {
                 Button {
-                    commitPingTarget()
-                    commitNumericSettings()
                     onClose()
                 } label: {
                     HStack(spacing: 4) {
@@ -107,7 +105,7 @@ struct SettingsView: View {
                         .font(.system(size: 12, design: .monospaced))
                         .frame(width: 145)
                         .onSubmit {
-                            commitPingTarget()
+                            _ = commitSettings()
                         }
                 }
 
@@ -123,7 +121,7 @@ struct SettingsView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .frame(width: 56)
                             .onSubmit {
-                                commitNumericSettings()
+                                _ = commitSettings()
                             }
                         Text("sec")
                             .font(.system(size: 11))
@@ -143,7 +141,7 @@ struct SettingsView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .frame(width: 56)
                             .onSubmit {
-                                commitNumericSettings()
+                                _ = commitSettings()
                             }
                         Text("ms")
                             .font(.system(size: 11))
@@ -163,7 +161,7 @@ struct SettingsView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .frame(width: 56)
                             .onSubmit {
-                                commitNumericSettings()
+                                _ = commitSettings()
                             }
                         Text("ms")
                             .font(.system(size: 11))
@@ -206,9 +204,10 @@ struct SettingsView: View {
                 Spacer()
 
                 Button("Apply & Close") {
-                    commitPingTarget()
-                    commitNumericSettings()
-                    onClose()
+                    let hadAdjustments = commitSettings()
+                    if !hadAdjustments {
+                        onClose()
+                    }
                 }
                 .buttonStyle(ModernMacButtonStyle(prominent: true))
                 .keyboardShortcut(.defaultAction)
@@ -221,46 +220,23 @@ struct SettingsView: View {
             draftDegradedThreshold = viewModel.degradedThreshold
             validationMessage = nil
         }
-        .onDisappear {
-            commitPingTarget()
-            commitNumericSettings()
-        }
     }
 
-    private func commitPingTarget() {
-        let trimmed = draftPingTarget.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, trimmed != viewModel.pingTarget else { return }
-        viewModel.pingTarget = trimmed
-    }
+    @discardableResult
+    private func commitSettings() -> Bool {
+        let adjustments = viewModel.applySettings(
+            pingTarget: draftPingTarget,
+            pingInterval: draftPingInterval,
+            goodThreshold: draftGoodThreshold,
+            degradedThreshold: draftDegradedThreshold
+        )
 
-    private func commitNumericSettings() {
-        let inputInterval = draftPingInterval
-        let inputGood = draftGoodThreshold
-        let inputDegraded = draftDegradedThreshold
-
-        viewModel.pingInterval = inputInterval
-        viewModel.goodThreshold = inputGood
-        viewModel.degradedThreshold = inputDegraded
-
-        let actualInterval = viewModel.pingInterval
-        let actualGood = viewModel.goodThreshold
-        let actualDegraded = viewModel.degradedThreshold
-
-        draftPingInterval = actualInterval
-        draftGoodThreshold = actualGood
-        draftDegradedThreshold = actualDegraded
-
-        var adjustments: [String] = []
-        if inputInterval != actualInterval {
-            adjustments.append("Interval clamped to \(Int(actualInterval))s (5–120s)")
-        }
-        if inputGood != actualGood {
-            adjustments.append("Good threshold clamped to \(Int(actualGood))ms")
-        }
-        if inputDegraded != actualDegraded {
-            adjustments.append("Degraded set to ≥ Good + 50ms (\(Int(actualDegraded))ms)")
-        }
+        draftPingTarget = viewModel.pingTarget
+        draftPingInterval = viewModel.pingInterval
+        draftGoodThreshold = viewModel.goodThreshold
+        draftDegradedThreshold = viewModel.degradedThreshold
 
         validationMessage = adjustments.isEmpty ? nil : adjustments.joined(separator: " • ")
+        return !adjustments.isEmpty
     }
 }

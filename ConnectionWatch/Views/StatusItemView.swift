@@ -4,6 +4,7 @@ struct StatusItemView: View {
     let state: ConnectionState
     var score: Int? = nil
     var pingLatency: Double? = nil
+    var httpLatency: Double? = nil
 
     var body: some View {
         HStack(spacing: 4) {
@@ -11,8 +12,14 @@ struct StatusItemView: View {
             if state == .paused {
                 Text("Paused")
                     .font(.system(size: 11, weight: .medium))
+            } else if state == .disconnected {
+                Text("Offline")
+                    .font(.system(size: 11, weight: .medium))
             } else if let pingLatency {
                 Text(String(format: "%.0fms", pingLatency))
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+            } else if let httpLatency {
+                Text(String(format: "%.0fms", httpLatency))
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
             } else if let score {
                 Text("\(score)%")

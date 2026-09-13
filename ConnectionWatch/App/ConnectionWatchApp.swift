@@ -11,7 +11,8 @@ struct ConnectionWatchApp: App {
             StatusItemView(
                 state: viewModel.currentState,
                 score: viewModel.health.score,
-                pingLatency: viewModel.latestPingLatency
+                pingLatency: viewModel.latestPingLatency,
+                httpLatency: viewModel.latestHTTPLatency
             )
         }
         .menuBarExtraStyle(.window)

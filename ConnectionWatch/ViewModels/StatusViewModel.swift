@@ -41,43 +41,42 @@ final class StatusViewModel {
 
     var notificationsEnabled: Bool {
         get { monitor.notificationsEnabled }
-        set {
-            monitor.notificationsEnabled = newValue
-            UserDefaults.standard.set(newValue, forKey: "notificationsEnabled")
-        }
+        set { monitor.notificationsEnabled = newValue }
     }
 
     var pingTarget: String {
         get { monitor.pingTarget }
-        set {
-            monitor.pingTarget = newValue
-            UserDefaults.standard.set(newValue, forKey: "pingTarget")
-        }
+        set { monitor.pingTarget = newValue }
     }
 
     var pingInterval: Double {
         get { monitor.pingInterval }
-        set {
-            monitor.pingInterval = newValue
-            UserDefaults.standard.set(monitor.pingInterval, forKey: "pingInterval")
-        }
+        set { monitor.pingInterval = newValue }
     }
 
     var goodThreshold: Double {
         get { monitor.goodThreshold }
-        set {
-            monitor.goodThreshold = newValue
-            UserDefaults.standard.set(monitor.goodThreshold, forKey: "goodThreshold")
-            UserDefaults.standard.set(monitor.degradedThreshold, forKey: "degradedThreshold")
-        }
+        set { monitor.goodThreshold = newValue }
     }
 
     var degradedThreshold: Double {
         get { monitor.degradedThreshold }
-        set {
-            monitor.degradedThreshold = newValue
-            UserDefaults.standard.set(monitor.degradedThreshold, forKey: "degradedThreshold")
-        }
+        set { monitor.degradedThreshold = newValue }
+    }
+
+    @discardableResult
+    func applySettings(
+        pingTarget: String,
+        pingInterval: Double,
+        goodThreshold: Double,
+        degradedThreshold: Double
+    ) -> [String] {
+        monitor.applySettings(
+            pingTarget: pingTarget,
+            pingInterval: pingInterval,
+            goodThreshold: goodThreshold,
+            degradedThreshold: degradedThreshold
+        )
     }
 
     func start() {

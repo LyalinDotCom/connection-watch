@@ -2,7 +2,7 @@ import Foundation
 
 actor HTTPProbeService {
     private let session: URLSession
-    private var currentIndex = 0
+    private var preferredIndex = 0
 
     static let defaultEndpoints = [
         "https://www.google.com/generate_204",
@@ -19,35 +19,46 @@ actor HTTPProbeService {
         self.session = URLSession(configuration: config)
     }
 
-    func probe(endpoints: [String] = defaultEndpoints) async -> PingResult {
+    func probe(endpoints: [String] = defaultEndpoints, timestamp: Date = Date()) async -> PingResult {
         let list = endpoints.isEmpty ? Self.defaultEndpoints : endpoints
-        let primaryIndex = currentIndex % list.count
-        currentIndex += 1
+        let primaryIndex = preferredIndex % list.count
 
         let primaryEndpoint = list[primaryIndex]
-        if let result = await performSingleProbe(endpoint: primaryEndpoint), result.succeeded {
+        if let result = await performSingleProbe(endpoint: primaryEndpoint, timestamp: timestamp), result.succeeded {
             return result
         }
 
-        // Fallback to a second distinct endpoint to avoid false alarms on single CDN hiccups
+        // Fallback to distinct endpoints on failure and update preferredIndex to the working endpoint
         if list.count > 1 {
-            let fallbackEndpoint = list[(primaryIndex + 1) % list.count]
-            if let fallbackResult = await performSingleProbe(endpoint: fallbackEndpoint), fallbackResult.succeeded {
-                return fallbackResult
+            for offset in 1..<list.count {
+                let candidateIndex = (primaryIndex + offset) % list.count
+                let fallbackEndpoint = list[candidateIndex]
+                if let fallbackResult = await performSingleProbe(endpoint: fallbackEndpoint, timestamp: timestamp), fallbackResult.succeeded {
+                    preferredIndex = candidateIndex
+                    return fallbackResult
+                }
             }
         }
 
-        return PingResult(timestamp: Date(), latency: nil, endpoint: primaryEndpoint, probeType: .http)
+        return PingResult(timestamp: timestamp, latency: nil, endpoint: primaryEndpoint, probeType: .http)
     }
 
-    private func performSingleProbe(endpoint: String) async -> PingResult? {
-        let timestamp = Date()
+    private func performSingleProbe(endpoint: String, timestamp: Date) async -> PingResult? {
+        if let headResult = await performRequest(endpoint: endpoint, method: "HEAD", timestamp: timestamp),
+           headResult.succeeded {
+            return headResult
+        }
+        // Fallback once to GET if a corporate proxy or server rejects HEAD
+        return await performRequest(endpoint: endpoint, method: "GET", timestamp: timestamp)
+    }
+
+    private func performRequest(endpoint: String, method: String, timestamp: Date) async -> PingResult? {
         guard let url = URL(string: endpoint) else {
             return PingResult(timestamp: timestamp, latency: nil, endpoint: endpoint, probeType: .http)
         }
 
         var request = URLRequest(url: url)
-        request.httpMethod = "HEAD"
+        request.httpMethod = method
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.timeoutInterval = 3.0
@@ -61,7 +72,7 @@ actor HTTPProbeService {
             let wallElapsedMs = (CFAbsoluteTimeGetCurrent() - start) * 1000
 
             guard let httpResponse = response as? HTTPURLResponse,
-                  (200...499).contains(httpResponse.statusCode) else {
+                  (200...399).contains(httpResponse.statusCode) else {
                 return PingResult(timestamp: timestamp, latency: nil, endpoint: endpoint, probeType: .http)
             }
 

@@ -1,9 +1,12 @@
 import Foundation
 
 actor PingService {
-    func ping(target: String = "1.1.1.1", count: Int = 3, timeoutMs: Int = 1000) async -> PingResult {
-        let timestamp = Date()
-
+    func ping(
+        target: String = "1.1.1.1",
+        count: Int = 3,
+        timeoutMs: Int = 1000,
+        timestamp: Date = Date()
+    ) async -> PingResult {
         do {
             let output = try await runPing(target: target, count: count, timeoutMs: timeoutMs)
             if let summary = PingOutputParser.parseSummary(from: output) {
@@ -42,8 +45,8 @@ actor PingService {
         let pipe = Pipe()
 
         process.executableURL = URL(fileURLWithPath: "/sbin/ping")
-        // Send rapid burst of `count` packets with 200ms spacing and `timeoutMs` per-packet timeout
-        process.arguments = ["-c", "\(count)", "-i", "0.2", "-W", "\(timeoutMs)", target]
+        // Send rapid burst of `count` packets with 200ms spacing, `timeoutMs` per-packet timeout, and 3s hard timeout (-t 3)
+        process.arguments = ["-c", "\(count)", "-i", "0.2", "-W", "\(timeoutMs)", "-t", "3", target]
         process.standardOutput = pipe
         process.standardError = pipe
 
@@ -64,7 +67,11 @@ actor PingService {
 
                 do {
                     try process.run()
+                    if Task.isCancelled && process.isRunning {
+                        process.terminate()
+                    }
                 } catch {
+                    process.terminationHandler = nil
                     continuation.resume(throwing: error)
                 }
             }

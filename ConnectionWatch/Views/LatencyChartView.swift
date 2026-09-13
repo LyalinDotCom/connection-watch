@@ -152,6 +152,7 @@ struct LatencyChartView: View {
                             x: .value("Time", entry.timestamp),
                             y: .value("Latency", entry.latency ?? 0)
                         )
+                        .position(by: .value("Type", "HTTP"))
                         .foregroundStyle(.blue.opacity(0.75))
                         .cornerRadius(2.5)
                     }
@@ -161,6 +162,7 @@ struct LatencyChartView: View {
                             x: .value("Time", entry.timestamp),
                             y: .value("Latency", entry.latency ?? 0)
                         )
+                        .position(by: .value("Type", "Ping"))
                         .foregroundStyle(.cyan.opacity(0.85))
                         .cornerRadius(2.5)
                     }
@@ -330,6 +332,8 @@ struct LatencyChartView: View {
         let pingLatency: Double?
         let jitter: Double?
         let httpLatency: Double?
+        let pingFailed: Bool
+        let httpFailed: Bool
     }
 
     private func nearestEntrySummary(at targetDate: Date) -> ScrubSummary? {
@@ -338,16 +342,20 @@ struct LatencyChartView: View {
             return nil
         }
 
-        // Find companion ping/http within 3 seconds of nearest timestamp
-        let windowEntries = nonSpeed.filter { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < 3.0 }
-        let pingEntry = windowEntries.first { $0.probeType == .ping }
-        let httpEntry = windowEntries.first { $0.probeType == .http }
+        // Match companion ping/http sharing the cycle timestamp (or closest within 2.5s)
+        let windowEntries = nonSpeed.filter { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < 2.5 }
+        let pingEntry = windowEntries.min(by: { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < abs($1.timestamp.timeIntervalSince(nearest.timestamp)) && $0.probeType == .ping })
+            ?? windowEntries.first { $0.probeType == .ping }
+        let httpEntry = windowEntries.min(by: { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < abs($1.timestamp.timeIntervalSince(nearest.timestamp)) && $0.probeType == .http })
+            ?? windowEntries.first { $0.probeType == .http }
 
         return ScrubSummary(
             timestamp: nearest.timestamp,
             pingLatency: pingEntry?.latency,
             jitter: pingEntry?.jitter,
-            httpLatency: httpEntry?.latency
+            httpLatency: httpEntry?.latency,
+            pingFailed: pingEntry != nil && pingEntry?.latency == nil && !history.isICMPLikelyBlocked,
+            httpFailed: httpEntry != nil && httpEntry?.latency == nil
         )
     }
 
@@ -364,6 +372,13 @@ struct LatencyChartView: View {
                     Text(String(format: "%.0fms", ping))
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                 }
+            } else if summary.pingFailed {
+                HStack(spacing: 2) {
+                    Circle().fill(.red).frame(width: 5, height: 5)
+                    Text("Timeout")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.red)
+                }
             }
 
             if let http = summary.httpLatency {
@@ -371,6 +386,13 @@ struct LatencyChartView: View {
                     Circle().fill(.blue).frame(width: 5, height: 5)
                     Text(String(format: "%.0fms", http))
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
+                }
+            } else if summary.httpFailed {
+                HStack(spacing: 2) {
+                    Circle().fill(.red).frame(width: 5, height: 5)
+                    Text("Failed")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.red)
                 }
             }
         }

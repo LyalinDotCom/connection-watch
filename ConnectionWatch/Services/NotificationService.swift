@@ -5,7 +5,7 @@ import UserNotifications
 final class NotificationService {
     private var lastNotificationDate: Date?
     private let cooldown: TimeInterval = 30
-    private var lastNotifiedState: ConnectionState?
+    private var lastNotifiedState: ConnectionState? = .good
     private var deferredCheckTask: Task<Void, Never>?
     private var currentStateProvider: (() -> ConnectionState)?
 
@@ -24,17 +24,25 @@ final class NotificationService {
         currentStateProvider = provider
     }
 
+    func cancelPending() {
+        deferredCheckTask?.cancel()
+        deferredCheckTask = nil
+    }
+
     func notify(state: ConnectionState) {
+        guard state != .paused else {
+            cancelPending()
+            return
+        }
+
         // Don't notify if this is the same state we already told the user about
         guard state != lastNotifiedState else {
-            deferredCheckTask?.cancel()
-            deferredCheckTask = nil
+            cancelPending()
             return
         }
 
         if canSendNotification() {
-            deferredCheckTask?.cancel()
-            deferredCheckTask = nil
+            cancelPending()
             sendNotification(state: state)
         } else {
             scheduleDeferredCheck()
@@ -77,7 +85,7 @@ final class NotificationService {
             guard !Task.isCancelled else { return }
             if let provider = self.currentStateProvider {
                 let currentState = provider()
-                if currentState != self.lastNotifiedState {
+                if currentState != .paused && currentState != self.lastNotifiedState {
                     self.sendNotification(state: currentState)
                 }
             }
