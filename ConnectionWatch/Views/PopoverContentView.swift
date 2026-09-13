@@ -202,7 +202,7 @@ struct PopoverContentView: View {
 
             Spacer(minLength: 0)
 
-            // 6. Bottom Action Button Bar (All interactive commands live here)
+            // 6. Bottom Action Button Bar (Test Speed & Quit)
             HStack(spacing: 8) {
                 Button {
                     viewModel.runSpeedTestNow()
@@ -221,18 +221,6 @@ struct PopoverContentView: View {
                 .buttonStyle(ModernMacButtonStyle(prominent: true, tintColor: .indigo))
                 .disabled(viewModel.isTestingSpeed || viewModel.isPaused)
                 .help("Run on-demand download speed probe")
-
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.84)) {
-                        showSettings = true
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "slider.horizontal.3")
-                        Text("Settings")
-                    }
-                }
-                .buttonStyle(ModernMacButtonStyle())
 
                 Spacer()
 
