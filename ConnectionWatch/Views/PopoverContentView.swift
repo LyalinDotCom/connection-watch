@@ -6,94 +6,153 @@ struct PopoverContentView: View {
     @State private var showSettings = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Status & Network Health Header
-            HStack(alignment: .center, spacing: 8) {
-                Circle()
-                    .fill(viewModel.currentState.color)
-                    .frame(width: 12, height: 12)
+        ZStack {
+            // Layer 1: Main Dashboard
+            mainDashboardView
+                .scaleEffect(showSettings ? 0.96 : 1.0)
+                .blur(radius: showSettings ? 8 : 0)
+                .opacity(showSettings ? 0 : 1.0)
+                .allowsHitTesting(!showSettings)
 
-                VStack(alignment: .leading, spacing: 1) {
+            // Layer 2: Spatial Settings Overlay (slides in horizontally, zero vertical resize)
+            if showSettings {
+                SettingsView(
+                    viewModel: viewModel,
+                    onClose: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.84)) {
+                            showSettings = false
+                        }
+                    }
+                )
+                .transition(
+                    .asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    )
+                )
+                .zIndex(1)
+            }
+        }
+        .padding(14)
+        .frame(width: 380, height: 470)
+        .background(.ultraThinMaterial)
+    }
+
+    private var mainDashboardView: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // 1. Status Header & Quick Controls
+            HStack(alignment: .center, spacing: 10) {
+                // Status Orb with subtle glow
+                ZStack {
+                    Circle()
+                        .fill(viewModel.currentState.color.opacity(0.25))
+                        .frame(width: 22, height: 22)
+                    Circle()
+                        .fill(viewModel.currentState.color)
+                        .frame(width: 10, height: 10)
+                        .shadow(color: viewModel.currentState.color.opacity(0.6), radius: 4)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(viewModel.currentState.label)
-                            .font(.headline)
+                            .font(.system(size: 14, weight: .semibold))
                         Text(viewModel.interfaceName)
-                            .font(.caption2)
+                            .font(.system(size: 10, weight: .medium))
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(.secondary.opacity(0.15))
+                            .background(Color.primary.opacity(0.08))
                             .clipShape(Capsule())
                     }
+
                     if viewModel.isPaused {
                         Text("Monitoring paused")
-                            .font(.caption)
+                            .font(.system(size: 11))
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("Health: \(viewModel.health.score)% • \(viewModel.health.ratingLabel)")
-                            .font(.caption)
-                            .foregroundStyle(viewModel.currentState.color)
+                        HStack(spacing: 4) {
+                            Text("Health \(viewModel.health.score)%")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .monospacedDigit()
+                                .foregroundStyle(viewModel.currentState.color)
+                            Text("•")
+                                .foregroundStyle(.tertiary)
+                            Text(viewModel.health.ratingLabel)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
                 Spacer()
 
-                // Pause / Resume button
-                Button {
-                    viewModel.togglePause()
-                } label: {
-                    Image(systemName: viewModel.isPaused ? "play.fill" : "pause.fill")
-                }
-                .buttonStyle(.borderless)
-                .help(viewModel.isPaused ? "Resume monitoring" : "Pause monitoring")
-
-                // Refresh button
-                Button {
-                    viewModel.refreshNow()
-                } label: {
-                    if viewModel.isProbing {
-                        ProgressView()
-                            .controlSize(.small)
-                            .frame(width: 16, height: 16)
-                    } else {
-                        Image(systemName: "arrow.clockwise")
+                // Quick Toolbar Buttons
+                HStack(spacing: 6) {
+                    Button {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.78)) {
+                            viewModel.togglePause()
+                        }
+                    } label: {
+                        Image(systemName: viewModel.isPaused ? "play.fill" : "pause.fill")
                     }
+                    .buttonStyle(ModernIconButtonStyle(active: viewModel.isPaused, activeColor: .orange))
+                    .help(viewModel.isPaused ? "Resume monitoring" : "Pause monitoring")
+
+                    Button {
+                        viewModel.refreshNow()
+                    } label: {
+                        if viewModel.isProbing {
+                            ProgressView()
+                                .controlSize(.small)
+                                .scaleEffect(0.75)
+                        } else {
+                            Image(systemName: "arrow.clockwise")
+                        }
+                    }
+                    .buttonStyle(ModernIconButtonStyle())
+                    .disabled(viewModel.isPaused)
+                    .help("Probe Ping & HTTP latency immediately")
+
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.84)) {
+                            showSettings = true
+                        }
+                    } label: {
+                        Image(systemName: "gearshape.fill")
+                    }
+                    .buttonStyle(ModernIconButtonStyle())
+                    .help("Settings (⌘,)")
+                    .keyboardShortcut(",", modifiers: .command)
                 }
-                .buttonStyle(.borderless)
-                .disabled(viewModel.isPaused)
-                .help("Check ping and HTTP latency now")
             }
 
-            // Diagnostic alert or informational banner
+            // 2. Diagnostic Banner (if any issues or ICMP notice)
             if !viewModel.isPaused && !viewModel.health.reasons.isEmpty {
                 let isNote = viewModel.health.isInformationalNoteOnly
                 HStack(spacing: 6) {
                     Image(systemName: isNote ? "info.circle.fill" : "exclamationmark.triangle.fill")
                         .foregroundStyle(isNote ? Color.secondary : viewModel.currentState.color)
-                        .font(.caption)
+                        .font(.system(size: 11))
                     Text(viewModel.health.reasons.joined(separator: " • "))
-                        .font(.caption2)
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(1)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 9)
                 .padding(.vertical, 5)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background((isNote ? Color.secondary : viewModel.currentState.color).opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
 
-            // Triple probe readout: Ping | HTTP | Download Speed (on-demand)
-            HStack(spacing: 12) {
-                pingReadout()
-                Divider().frame(height: 36)
-                httpReadout()
-                Divider().frame(height: 36)
-                downloadReadout()
+            // 3. Triple Probe Cards Row (Ping | HTTP | Speed)
+            HStack(spacing: 8) {
+                pingCard()
+                httpCard()
+                downloadCard()
             }
 
-            Divider()
-
-            // Chart
+            // 4. Hero Interactive Multi-Mode Chart
             if !viewModel.history.isEmpty {
                 LatencyChartView(
                     history: viewModel.history,
@@ -101,187 +160,239 @@ struct PopoverContentView: View {
                     degradedThreshold: viewModel.degradedThreshold
                 )
             } else {
-                Text("Collecting data...")
-                    .foregroundStyle(.secondary)
-                    .frame(height: 150)
-                    .frame(maxWidth: .infinity)
+                VStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Collecting first network samples...")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(height: 175)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color(nsColor: .controlBackgroundColor).opacity(0.45))
+                )
             }
 
-            // Stats row
+            // 5. Compact Stats Summary Pill Strip
             if !viewModel.history.isEmpty {
-                HStack(spacing: 16) {
-                    statItem("Avg", value: viewModel.history.averageLatency)
-                    statItem("Min", value: viewModel.history.minLatency)
-                    statItem("Max", value: viewModel.history.maxLatency)
+                HStack(spacing: 12) {
+                    statBadge("Avg", value: viewModel.history.averageLatency)
+                    statBadge("Min", value: viewModel.history.minLatency)
+                    statBadge("Max", value: viewModel.history.maxLatency)
+
                     Spacer()
+
                     let loss = viewModel.recentPacketLoss
-                    Text(String(format: "Loss: %.1f%%", loss))
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(loss > 0 ? Color.orange : Color.secondary)
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(loss > 0 ? Color.orange : Color.green)
+                            .frame(width: 5, height: 5)
+                        Text(String(format: "Loss %.1f%%", loss))
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(loss > 0 ? Color.orange : Color.secondary)
+                    }
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(Color.primary.opacity(0.05))
+                    .clipShape(Capsule())
                 }
             }
 
-            Divider()
+            Spacer(minLength: 0)
 
-            // Bottom bar
-            HStack {
+            // 6. Bottom Control Bar
+            HStack(spacing: 8) {
                 Button {
-                    showSettings.toggle()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.84)) {
+                        showSettings = true
+                    }
                 } label: {
-                    Image(systemName: "gear")
+                    HStack(spacing: 5) {
+                        Image(systemName: "slider.horizontal.3")
+                        Text("Settings")
+                    }
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(ModernMacButtonStyle())
 
                 Button {
-                    viewModel.togglePause()
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.78)) {
+                        viewModel.togglePause()
+                    }
                 } label: {
-                    Label(viewModel.isPaused ? "Resume" : "Pause", systemImage: viewModel.isPaused ? "play.fill" : "pause.fill")
-                        .font(.caption)
+                    HStack(spacing: 5) {
+                        Image(systemName: viewModel.isPaused ? "play.fill" : "pause.fill")
+                        Text(viewModel.isPaused ? "Resume" : "Pause")
+                    }
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(ModernMacButtonStyle())
 
                 Spacer()
 
-                Button("Quit") {
+                Button {
                     NSApplication.shared.terminate(nil)
-                }
-                .buttonStyle(.borderless)
-            }
-
-            if showSettings {
-                SettingsView(viewModel: viewModel)
-            }
-        }
-        .padding()
-        .frame(width: 360)
-    }
-
-    private func pingReadout() -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(viewModel.latestPingLatency != nil ? Color.green : Color.red)
-                    .frame(width: 6, height: 6)
-                Text("Ping")
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
-            }
-            if let latency = viewModel.latestPingLatency {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(String(format: "%.0fms", latency))
-                        .font(.system(.callout, design: .monospaced))
-                    if let jitter = viewModel.latestJitter {
-                        Text(String(format: "±%.0f", jitter))
-                            .font(.system(.caption2, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "power")
+                        Text("Quit")
                     }
                 }
-            } else {
-                Text("Failed")
-                    .font(.callout)
-                    .foregroundStyle(.red)
+                .buttonStyle(ModernMacButtonStyle())
+                .keyboardShortcut("q", modifiers: .command)
             }
-            Text(viewModel.pingTarget)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .lineLimit(1)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func httpReadout() -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Circle()
-                    .fill(viewModel.latestHTTPLatency != nil ? Color.green : Color.red)
-                    .frame(width: 6, height: 6)
-                Text("HTTP")
-                    .font(.caption.bold())
-                    .foregroundStyle(.secondary)
-            }
-            if let latency = viewModel.latestHTTPLatency {
-                Text(String(format: "%.0fms", latency))
-                    .font(.system(.callout, design: .monospaced))
-            } else {
-                Text("Failed")
-                    .font(.callout)
-                    .foregroundStyle(.red)
-            }
-            Text(viewModel.latestHTTPEndpoint.map { shortHost($0) } ?? "probe")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .lineLimit(1)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+    // MARK: - Metric Cards
 
-    private func downloadReadout() -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private func pingCard() -> some View {
+        VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Circle()
-                    .fill(viewModel.latestDownloadSpeedMbps != nil ? Color.blue : Color.secondary)
+                    .fill(viewModel.latestPingLatency != nil ? Color.cyan : Color.red)
                     .frame(width: 6, height: 6)
-                Text("Download")
-                    .font(.caption.bold())
+                Text("PING")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.secondary)
             }
-            if let mbps = viewModel.latestDownloadSpeedMbps {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(String(format: "%.1f Mbps", mbps))
-                        .font(.system(.callout, design: .monospaced))
-                    if let date = viewModel.latestDownloadSpeedDate {
-                        Text(relativeAgeString(from: date))
-                            .font(.caption2)
+
+            if let latency = viewModel.latestPingLatency {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(String(format: "%.0f", latency))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    Text("ms")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    if let jitter = viewModel.latestJitter {
+                        Text(String(format: "±%.0f", jitter))
+                            .font(.system(size: 10, design: .monospaced))
                             .foregroundStyle(.tertiary)
                     }
                 }
-            } else if viewModel.isTestingSpeed {
-                Text("Testing...")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             } else {
-                Text("On demand")
-                    .font(.caption)
+                Text(viewModel.health.isICMPBlocked ? "Filtered" : "Failed")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(viewModel.health.isICMPBlocked ? Color.secondary : Color.red)
+            }
+
+            Text(viewModel.pingTarget)
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .hoverableCard(accentColor: .cyan)
+    }
+
+    private func httpCard() -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(viewModel.latestHTTPLatency != nil ? Color.blue : Color.red)
+                    .frame(width: 6, height: 6)
+                Text("HTTP")
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.secondary)
             }
+
+            if let latency = viewModel.latestHTTPLatency {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(String(format: "%.0f", latency))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    Text("ms")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text("Failed")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.red)
+            }
+
+            Text(viewModel.latestHTTPEndpoint.map { shortHost($0) } ?? "probe")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .hoverableCard(accentColor: .blue)
+    }
+
+    private func downloadCard() -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
+                Circle()
+                    .fill(viewModel.latestDownloadSpeedMbps != nil ? Color.indigo : Color.secondary)
+                    .frame(width: 6, height: 6)
+                Text("SPEED")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+            }
+
+            if let mbps = viewModel.latestDownloadSpeedMbps {
+                HStack(alignment: .firstTextBaseline, spacing: 3) {
+                    Text(String(format: "%.1f", mbps))
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    Text("Mbps")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+            } else if viewModel.isTestingSpeed {
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.65)
+                    Text("Testing...")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text("On demand")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+
             Button {
                 viewModel.runSpeedTestNow()
             } label: {
-                Text(viewModel.isTestingSpeed ? "Running..." : "Test speed")
-                    .font(.caption2)
-                    .foregroundStyle(.blue)
+                HStack(spacing: 3) {
+                    Image(systemName: viewModel.isTestingSpeed ? "arrow.down.circle.dotted" : "speedometer")
+                        .font(.system(size: 9))
+                    Text(viewModel.isTestingSpeed ? "Running..." : "Test Speed")
+                        .font(.system(size: 10, weight: .medium))
+                }
             }
-            .buttonStyle(.borderless)
-            .disabled(viewModel.isTestingSpeed)
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.accentColor)
+            .disabled(viewModel.isTestingSpeed || viewModel.isPaused)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .hoverableCard(accentColor: .indigo)
     }
 
-    private func statItem(_ label: String, value: Double?) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private func statBadge(_ label: String, value: Double?) -> some View {
+        HStack(spacing: 4) {
             Text(label)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.secondary)
             Text(value.map { String(format: "%.0fms", $0) } ?? "—")
-                .font(.system(.caption, design: .monospaced))
-        }
-    }
-
-    private func relativeAgeString(from date: Date) -> String {
-        let elapsed = max(0, Int(Date().timeIntervalSince(date)))
-        if elapsed < 45 {
-            return "just now"
-        } else if elapsed < 3600 {
-            return "\(elapsed / 60)m ago"
-        } else {
-            return "\(elapsed / 3600)h ago"
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.primary)
         }
     }
 
     private func shortHost(_ urlString: String) -> String {
-        guard let url = URL(string: urlString), let host = url.host() else {
-            return urlString
+        if let url = URL(string: urlString), let host = url.host() {
+            return host.replacingOccurrences(of: "www.", with: "")
         }
-        return host
+        return urlString
     }
 }

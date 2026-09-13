@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var viewModel: StatusViewModel
+    var onClose: () -> Void = {}
 
     @State private var draftPingTarget: String = ""
     @State private var draftPingInterval: Double = 10
@@ -10,98 +11,204 @@ struct SettingsView: View {
     @State private var validationMessage: String?
 
     private var appVersionString: String {
-        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.1"
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "3"
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.0"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "4"
         return "v\(shortVersion) (build \(buildNumber))"
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Divider()
-
-            HStack {
-                Text("Settings")
-                    .font(.subheadline.bold())
-                Spacer()
-                Text(appVersionString)
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-
-            Toggle("Launch at Login", isOn: $viewModel.launchAtLogin)
-                .toggleStyle(.switch)
-                .controlSize(.small)
-
-            Toggle("Enable Notifications", isOn: $viewModel.notificationsEnabled)
-                .toggleStyle(.switch)
-                .controlSize(.small)
-
-            LabeledContent("Ping Target") {
-                TextField("IP or hostname", text: $draftPingTarget)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 140)
-                    .onSubmit {
-                        commitPingTarget()
+        VStack(alignment: .leading, spacing: 14) {
+            // Top Navigation Header Bar
+            HStack(spacing: 8) {
+                Button {
+                    commitPingTarget()
+                    commitNumericSettings()
+                    onClose()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Back")
                     }
-            }
-            .font(.caption)
+                }
+                .buttonStyle(ModernMacButtonStyle())
+                .keyboardShortcut(.escape, modifiers: [])
 
-            LabeledContent("Interval") {
-                HStack(spacing: 4) {
-                    TextField("", value: $draftPingInterval, format: .number)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 50)
-                        .onSubmit {
-                            commitNumericSettings()
-                        }
-                    Text("sec")
-                        .foregroundStyle(.secondary)
+                Spacer()
+
+                Text("Settings")
+                    .font(.system(size: 14, weight: .semibold))
+
+                Spacer()
+
+                Text(appVersionString)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Color.primary.opacity(0.06))
+                    .clipShape(Capsule())
+            }
+
+            // General Settings Card
+            VStack(alignment: .leading, spacing: 10) {
+                Text("GENERAL")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                HStack {
+                    Label("Launch at Login", systemImage: "power")
+                        .font(.system(size: 12.5))
+                    Spacer()
+                    Toggle("", isOn: $viewModel.launchAtLogin)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                }
+
+                Divider().opacity(0.5)
+
+                HStack {
+                    Label("State Change Notifications", systemImage: "bell.badge")
+                        .font(.system(size: 12.5))
+                    Spacer()
+                    Toggle("", isOn: $viewModel.notificationsEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
                 }
             }
-            .font(.caption)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.65))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            )
 
-            LabeledContent("Good < ") {
-                HStack(spacing: 4) {
-                    TextField("", value: $draftGoodThreshold, format: .number)
+            // Network Probes & Thresholds Card
+            VStack(alignment: .leading, spacing: 10) {
+                Text("PROBES & THRESHOLDS")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                HStack {
+                    Text("Ping Target")
+                        .font(.system(size: 12.5))
+                    Spacer()
+                    TextField("IP or hostname", text: $draftPingTarget)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 50)
+                        .font(.system(size: 12, design: .monospaced))
+                        .frame(width: 145)
                         .onSubmit {
-                            commitNumericSettings()
+                            commitPingTarget()
                         }
-                    Text("ms")
-                        .foregroundStyle(.secondary)
+                }
+
+                Divider().opacity(0.5)
+
+                HStack {
+                    Text("Poll Interval")
+                        .font(.system(size: 12.5))
+                    Spacer()
+                    HStack(spacing: 4) {
+                        TextField("", value: $draftPingInterval, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(width: 56)
+                            .onSubmit {
+                                commitNumericSettings()
+                            }
+                        Text("sec")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider().opacity(0.5)
+
+                HStack {
+                    Text("Good Latency <")
+                        .font(.system(size: 12.5))
+                    Spacer()
+                    HStack(spacing: 4) {
+                        TextField("", value: $draftGoodThreshold, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(width: 56)
+                            .onSubmit {
+                                commitNumericSettings()
+                            }
+                        Text("ms")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider().opacity(0.5)
+
+                HStack {
+                    Text("Degraded Latency <")
+                        .font(.system(size: 12.5))
+                    Spacer()
+                    HStack(spacing: 4) {
+                        TextField("", value: $draftDegradedThreshold, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(width: 56)
+                            .onSubmit {
+                                commitNumericSettings()
+                            }
+                        Text("ms")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            .font(.caption)
-
-            LabeledContent("Degraded < ") {
-                HStack(spacing: 4) {
-                    TextField("", value: $draftDegradedThreshold, format: .number)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 50)
-                        .onSubmit {
-                            commitNumericSettings()
-                        }
-                    Text("ms")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .font(.caption)
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.65))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            )
 
             if let validationMessage {
-                Text(validationMessage)
-                    .font(.caption2)
-                    .foregroundStyle(.orange)
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle.fill")
+                        .foregroundStyle(.orange)
+                    Text(validationMessage)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.orange)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.orange.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
 
+            Spacer(minLength: 0)
+
+            // Bottom Footer Bar
             HStack {
-                Spacer()
                 Text("ConnectionWatch \(appVersionString)")
-                    .font(.caption2)
+                    .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.tertiary)
+
                 Spacer()
+
+                Button("Apply & Close") {
+                    commitPingTarget()
+                    commitNumericSettings()
+                    onClose()
+                }
+                .buttonStyle(ModernMacButtonStyle(prominent: true))
+                .keyboardShortcut(.defaultAction)
             }
-            .padding(.top, 2)
         }
         .onAppear {
             draftPingTarget = viewModel.pingTarget

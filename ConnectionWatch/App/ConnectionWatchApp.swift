@@ -15,7 +15,7 @@ struct ConnectionWatchApp: App {
             )
         }
         .menuBarExtraStyle(.window)
-        .defaultSize(width: 360, height: 450)
+        .defaultSize(width: 380, height: 470)
         .onChange(of: viewModel.currentState) { }
     }
 

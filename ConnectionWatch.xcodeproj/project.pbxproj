@@ -41,6 +41,7 @@
 		A1002A00000000000000002A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20008000000000000000008 /* NotificationService.swift */; };
 		A1001A00000000000000001A /* NetworkUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001A00000000000000001A /* NetworkUtilities.swift */; };
 		A1002B00000000000000002B /* NetworkUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001A00000000000000001A /* NetworkUtilities.swift */; };
+		A1001B00000000000000001B /* ModernMacStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001B00000000000000001B /* ModernMacStyles.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +72,7 @@
 		A2000B00000000000000000B /* PopoverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverContentView.swift; sourceTree = "<group>"; };
 		A2000C00000000000000000C /* LatencyChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyChartView.swift; sourceTree = "<group>"; };
 		A2000D00000000000000000D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A2001B00000000000000001B /* ModernMacStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModernMacStyles.swift; sourceTree = "<group>"; };
 		A2000E00000000000000000E /* PingOutputParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingOutputParser.swift; sourceTree = "<group>"; };
 		A2001A00000000000000001A /* NetworkUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkUtilities.swift; sourceTree = "<group>"; };
 		A2000F00000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -181,6 +183,7 @@
 				A2000B00000000000000000B /* PopoverContentView.swift */,
 				A2000C00000000000000000C /* LatencyChartView.swift */,
 				A2000D00000000000000000D /* SettingsView.swift */,
+				A2001B00000000000000001B /* ModernMacStyles.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -306,6 +309,7 @@
 				A1000B00000000000000000B /* PopoverContentView.swift in Sources */,
 				A1000C00000000000000000C /* LatencyChartView.swift in Sources */,
 				A1000D00000000000000000D /* SettingsView.swift in Sources */,
+				A1001B00000000000000001B /* ModernMacStyles.swift in Sources */,
 				A1000E00000000000000000E /* PingOutputParser.swift in Sources */,
 				A1001A00000000000000001A /* NetworkUtilities.swift in Sources */,
 				A10016000000000000000016 /* HTTPProbeService.swift in Sources */,
@@ -473,7 +477,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -487,7 +491,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -505,7 +509,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -519,7 +523,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -533,11 +537,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -551,11 +555,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
