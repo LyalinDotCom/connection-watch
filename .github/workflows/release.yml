@@ -104,7 +104,7 @@ jobs:
           BUILDNUM: ${{ steps.version.outputs.build }}
         run: |
           set -euo pipefail
-          APP="build/dd/Build/Products/Release/ConnectionWatch.app"
+          APP="build/dd/Build/Products/Release/Connection Watch.app"
           test -d "$APP" || { echo "::error::$APP not found"; exit 1; }
 
           # The shipped Info.plist must agree with what we tagged.
@@ -116,9 +116,10 @@ jobs:
           fi
 
           # Must be universal, or Intel Macs get a build they cannot run.
-          lipo -info "$APP/Contents/MacOS/ConnectionWatch"
-          lipo -info "$APP/Contents/MacOS/ConnectionWatch" | grep -q 'x86_64' || { echo "::error::missing x86_64 slice"; exit 1; }
-          lipo -info "$APP/Contents/MacOS/ConnectionWatch" | grep -q 'arm64'  || { echo "::error::missing arm64 slice";  exit 1; }
+          BIN="$APP/Contents/MacOS/Connection Watch"
+          lipo -info "$BIN"
+          lipo -info "$BIN" | grep -q 'x86_64' || { echo "::error::missing x86_64 slice"; exit 1; }
+          lipo -info "$BIN" | grep -q 'arm64'  || { echo "::error::missing arm64 slice";  exit 1; }
 
           # Ad-hoc signature is required for the app to launch on Apple Silicon at all.
           codesign --verify --deep --strict --verbose=2 "$APP"
@@ -130,7 +131,7 @@ jobs:
           set -euo pipefail
           # ditto (not zip) so bundle symlinks, resource forks and the signature survive.
           ditto -c -k --keepParent --sequesterRsrc \
-            "build/dd/Build/Products/Release/ConnectionWatch.app" "$ZIP"
+            "build/dd/Build/Products/Release/Connection Watch.app" "$ZIP"
           ls -lh "$ZIP"
 
       - name: Upload build artifact
@@ -152,21 +153,21 @@ jobs:
           PREV_TAG=$(git tag --list 'v*' --sort=-creatordate | head -n 1 || true)
 
           {
-            echo "## ConnectionWatch ${MARKETING} (build ${BUILDNUM})"
+            echo "## Connection Watch ${MARKETING} (build ${BUILDNUM})"
             echo
             echo "A macOS menu-bar connection monitor. Universal binary — Apple Silicon and Intel."
             echo
             echo "### Install"
             echo
             echo "1. Download \`${ZIP}\` below and unzip it."
-            echo "2. Drag **ConnectionWatch.app** into your **Applications** folder."
+            echo "2. Drag **Connection Watch.app** into your **Applications** folder."
             echo "3. **First launch only:** right-click the app → **Open** → **Open**."
             echo
             echo "> [!IMPORTANT]"
             echo "> This build is ad-hoc signed, not notarized by Apple, so macOS Gatekeeper blocks it on first launch."
-            echo "> If you see *\"ConnectionWatch is damaged and can't be opened\"*, clear the quarantine flag:"
+            echo "> If you see a *\"damaged and can't be opened\"* error, clear the quarantine flag:"
             echo "> \`\`\`"
-            echo "> xattr -dr com.apple.quarantine /Applications/ConnectionWatch.app"
+            echo "> xattr -dr com.apple.quarantine \"/Applications/Connection Watch.app\""
             echo "> \`\`\`"
             echo
             echo "### Changes"

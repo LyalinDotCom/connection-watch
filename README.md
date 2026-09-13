@@ -1,12 +1,12 @@
-# ConnectionWatch
+# Connection Watch
 
 A macOS menu bar app that tells you whether your internet is actually working — and when it isn't, which part broke.
 
-![ConnectionWatch showing connection health, ping and HTTP latency, and a latency chart](docs/screenshot.png)
+![Connection Watch showing connection health, ping and HTTP latency, and a latency chart](docs/screenshot.png)
 
 ## Why it's useful
 
-"Connected" doesn't mean working. ConnectionWatch runs two independent probes — an ICMP ping burst and an HTTP request — and scores them separately, so when they disagree you get a diagnosis instead of a green dot:
+"Connected" doesn't mean working. Connection Watch runs two independent probes — an ICMP ping burst and an HTTP request — and scores them separately, so when they disagree you get a diagnosis instead of a green dot:
 
 | Symptom | Likely cause |
 | --- | --- |
@@ -16,7 +16,7 @@ A macOS menu bar app that tells you whether your internet is actually working �
 
 It's quiet by design — background monitoring is one ping burst and one HTTP `HEAD` request every 10 seconds. The download speed test only runs when you press the button, because a monitor that saturates your connection to measure it is mostly measuring itself.
 
-It also won't cry wolf. Plenty of corporate, hotel, and VPN networks silently drop ICMP. ConnectionWatch notices and scores on HTTP alone instead of parking a red light on a perfectly good connection.
+It also won't cry wolf. Plenty of corporate, hotel, and VPN networks silently drop ICMP. Connection Watch notices and scores on HTTP alone instead of parking a red light on a perfectly good connection.
 
 ## Features
 
@@ -36,13 +36,13 @@ Requires macOS 14 or later.
 ### Option 1 — Download a build
 
 1. Download the latest `.zip` from [**Releases**](../../releases).
-2. Unzip it and drag **ConnectionWatch.app** into **Applications**.
+2. Unzip it and drag **Connection Watch.app** into **Applications**.
 3. **First launch only:** right-click the app → **Open** → **Open**.
 
 > [!NOTE]
-> Releases are ad-hoc signed but not notarized by Apple, so macOS blocks them on first launch. Step 3 gets you past it. If you instead see *"ConnectionWatch is damaged and can't be opened"*, clear the quarantine flag:
+> Releases are ad-hoc signed but not notarized by Apple, so macOS blocks them on first launch. Step 3 gets you past it. If you instead see a *"damaged and can't be opened"* error, clear the quarantine flag:
 > ```sh
-> xattr -dr com.apple.quarantine /Applications/ConnectionWatch.app
+> xattr -dr com.apple.quarantine "/Applications/Connection Watch.app"
 > ```
 
 ### Option 2 — Build it yourself

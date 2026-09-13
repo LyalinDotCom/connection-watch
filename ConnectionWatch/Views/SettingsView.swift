@@ -10,9 +10,13 @@ struct SettingsView: View {
     @State private var draftDegradedThreshold: Double = 600
     @State private var validationMessage: String?
 
+    private var appDisplayName: String {
+        Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "Connection Watch"
+    }
+
     private var appVersionString: String {
-        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.2.9"
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "13"
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.0"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "14"
         return "v\(shortVersion) (build \(buildNumber))"
     }
 
@@ -195,7 +199,7 @@ struct SettingsView: View {
 
             // Bottom Footer Bar
             HStack {
-                Text("ConnectionWatch \(appVersionString)")
+                Text("\(appDisplayName) \(appVersionString)")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.tertiary)
 
