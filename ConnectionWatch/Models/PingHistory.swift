@@ -29,11 +29,11 @@ struct PingHistory: Sendable {
     }
 
     /// Single source of truth for whether ICMP is filtered while HTTP connectivity works.
-    /// True if all recent ping probes in the window failed while at least one recent HTTP probe succeeded.
+    /// True if at least 3 recent ping probes in the window failed while at least one recent HTTP probe succeeded.
     var isICMPLikelyBlocked: Bool {
         let recentPings = buffer.filter { $0.probeType == .ping }.suffix(6)
         let recentHTTPs = buffer.filter { $0.probeType == .http }.suffix(6)
-        guard !recentPings.isEmpty, !recentHTTPs.isEmpty else { return false }
+        guard recentPings.count >= 3, !recentHTTPs.isEmpty else { return false }
         let allPingsFailed = recentPings.allSatisfy { !$0.succeeded }
         let anyHTTPSucceeded = recentHTTPs.contains { $0.succeeded }
         return allPingsFailed && anyHTTPSucceeded

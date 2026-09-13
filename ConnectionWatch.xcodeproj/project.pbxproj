@@ -39,6 +39,8 @@
 		A10028000000000000000028 /* SpeedTestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20018000000000000000018 /* SpeedTestService.swift */; };
 		A10029000000000000000029 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20006000000000000000006 /* NetworkMonitor.swift */; };
 		A1002A00000000000000002A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20008000000000000000008 /* NotificationService.swift */; };
+		A1001A00000000000000001A /* NetworkUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001A00000000000000001A /* NetworkUtilities.swift */; };
+		A1002B00000000000000002B /* NetworkUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001A00000000000000001A /* NetworkUtilities.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,6 +72,7 @@
 		A2000C00000000000000000C /* LatencyChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LatencyChartView.swift; sourceTree = "<group>"; };
 		A2000D00000000000000000D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A2000E00000000000000000E /* PingOutputParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingOutputParser.swift; sourceTree = "<group>"; };
+		A2001A00000000000000001A /* NetworkUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkUtilities.swift; sourceTree = "<group>"; };
 		A2000F00000000000000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20010000000000000000010 /* PingOutputParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingOutputParserTests.swift; sourceTree = "<group>"; };
 		A20011000000000000000011 /* PingHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PingHistoryTests.swift; sourceTree = "<group>"; };
@@ -196,6 +199,7 @@
 			isa = PBXGroup;
 			children = (
 				A2000E00000000000000000E /* PingOutputParser.swift */,
+				A2001A00000000000000001A /* NetworkUtilities.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -303,6 +307,7 @@
 				A1000C00000000000000000C /* LatencyChartView.swift in Sources */,
 				A1000D00000000000000000D /* SettingsView.swift in Sources */,
 				A1000E00000000000000000E /* PingOutputParser.swift in Sources */,
+				A1001A00000000000000001A /* NetworkUtilities.swift in Sources */,
 				A10016000000000000000016 /* HTTPProbeService.swift in Sources */,
 				A10017000000000000000017 /* NetworkHealth.swift in Sources */,
 				A10018000000000000000018 /* SpeedTestService.swift in Sources */,
@@ -317,6 +322,7 @@
 				A10011000000000000000011 /* PingHistoryTests.swift in Sources */,
 				A10019000000000000000019 /* NetworkHealthTests.swift in Sources */,
 				A10020000000000000000020 /* PingOutputParser.swift in Sources */,
+				A1002B00000000000000002B /* NetworkUtilities.swift in Sources */,
 				A10021000000000000000021 /* PingHistory.swift in Sources */,
 				A10022000000000000000022 /* PingResult.swift in Sources */,
 				A10023000000000000000023 /* ConnectionState.swift in Sources */,
@@ -467,7 +473,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -481,7 +487,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -499,7 +505,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -513,7 +519,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -527,11 +533,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -545,11 +551,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;

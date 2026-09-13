@@ -155,7 +155,7 @@ struct NetworkHealth: Sendable, Equatable {
         // Hysteresis dead-band around score 70 to prevent oscillation
         let goodCutoff: Int = (previousState == .degraded) ? 73 : 68
 
-        var state: ConnectionState
+        let state: ConnectionState
         let ratingLabel: String
         if finalScore >= 85 {
             state = .good
@@ -166,17 +166,9 @@ struct NetworkHealth: Sendable, Equatable {
         } else if finalScore >= 45 {
             state = .degraded
             ratingLabel = "Fair"
-        } else if finalScore >= 20 {
-            state = .degraded
-            ratingLabel = "Poor"
         } else {
-            state = .disconnected
-            ratingLabel = "Poor"
-        }
-
-        // R1 Fix: A working connection (early offline check did not fire) is degraded, never "down".
-        if state == .disconnected {
             state = .degraded
+            ratingLabel = "Poor"
         }
 
         let effectiveLoss = icmpBlocked ? 0.0 : recentPacketLoss

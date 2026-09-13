@@ -54,11 +54,19 @@ struct PingHistoryTests {
 
     @Test func icmpBlockedRecentPacketLossFallsBackToHTTP() {
         var history = PingHistory()
-        for _ in 0..<4 {
-            history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
-            history.append(PingResult(timestamp: Date(), latency: 42.0, probeType: .http))
-        }
 
+        // 1 or 2 failed pings + HTTP success should NOT classify as ICMP blocked yet
+        history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
+        history.append(PingResult(timestamp: Date(), latency: 42.0, probeType: .http))
+        #expect(history.isICMPLikelyBlocked == false)
+
+        history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
+        history.append(PingResult(timestamp: Date(), latency: 42.0, probeType: .http))
+        #expect(history.isICMPLikelyBlocked == false)
+
+        // 3rd failed ping reaches minimum sample count for ICMP blocked classification
+        history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
+        history.append(PingResult(timestamp: Date(), latency: 42.0, probeType: .http))
         #expect(history.isICMPLikelyBlocked == true)
         #expect(history.rawRecentPingPacketLoss() == 100.0)
         #expect(history.recentPacketLoss() == 0.0)

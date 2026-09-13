@@ -1,25 +1,7 @@
 import Foundation
 
-private final class HTTPMetricsDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let lock = NSLock()
-    private var metricsByTaskIdentifier: [Int: URLSessionTaskMetrics] = [:]
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
-        lock.lock()
-        metricsByTaskIdentifier[task.taskIdentifier] = metrics
-        lock.unlock()
-    }
-
-    func takeMetrics(for taskIdentifier: Int) -> URLSessionTaskMetrics? {
-        lock.lock()
-        defer { lock.unlock() }
-        return metricsByTaskIdentifier.removeValue(forKey: taskIdentifier)
-    }
-}
-
 actor HTTPProbeService {
     private let session: URLSession
-    private let delegate = HTTPMetricsDelegate()
     private var currentIndex = 0
 
     static let defaultEndpoints = [
@@ -34,7 +16,7 @@ actor HTTPProbeService {
         config.timeoutIntervalForRequest = 3.0
         config.timeoutIntervalForResource = 3.0
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        self.session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+        self.session = URLSession(configuration: config)
     }
 
     func probe(endpoints: [String] = defaultEndpoints) async -> PingResult {
@@ -70,11 +52,12 @@ actor HTTPProbeService {
         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.timeoutInterval = 3.0
 
+        let metricsDelegate = URLSessionMetricsDelegate()
         let start = CFAbsoluteTimeGetCurrent()
 
         do {
-            let (response, taskID) = try await runDataTask(request: request)
-            let metrics = delegate.takeMetrics(for: taskID)
+            let (_, response) = try await session.data(for: request, delegate: metricsDelegate)
+            let metrics = metricsDelegate.collectedMetrics
             let wallElapsedMs = (CFAbsoluteTimeGetCurrent() - start) * 1000
 
             guard let httpResponse = response as? HTTPURLResponse,
@@ -97,25 +80,6 @@ actor HTTPProbeService {
             return PingResult(timestamp: timestamp, latency: finalLatency, endpoint: endpoint, probeType: .http)
         } catch {
             return PingResult(timestamp: timestamp, latency: nil, endpoint: endpoint, probeType: .http)
-        }
-    }
-
-    private func runDataTask(request: URLRequest) async throws -> (URLResponse, Int) {
-        try await withCheckedThrowingContinuation { continuation in
-            var taskID = 0
-            let task = session.dataTask(with: request) { [delegate] _, response, error in
-                if let error {
-                    _ = delegate.takeMetrics(for: taskID)
-                    continuation.resume(throwing: error)
-                } else if let response {
-                    continuation.resume(returning: (response, taskID))
-                } else {
-                    _ = delegate.takeMetrics(for: taskID)
-                    continuation.resume(throwing: URLError(.badServerResponse))
-                }
-            }
-            taskID = task.taskIdentifier
-            task.resume()
         }
     }
 }

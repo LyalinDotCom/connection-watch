@@ -7,10 +7,11 @@ struct SettingsView: View {
     @State private var draftPingInterval: Double = 10
     @State private var draftGoodThreshold: Double = 150
     @State private var draftDegradedThreshold: Double = 600
+    @State private var validationMessage: String?
 
     private var appVersionString: String {
-        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0"
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "2"
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.1"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "3"
         return "v\(shortVersion) (build \(buildNumber))"
     }
 
@@ -87,6 +88,12 @@ struct SettingsView: View {
             }
             .font(.caption)
 
+            if let validationMessage {
+                Text(validationMessage)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+            }
+
             HStack {
                 Spacer()
                 Text("ConnectionWatch \(appVersionString)")
@@ -101,6 +108,7 @@ struct SettingsView: View {
             draftPingInterval = viewModel.pingInterval
             draftGoodThreshold = viewModel.goodThreshold
             draftDegradedThreshold = viewModel.degradedThreshold
+            validationMessage = nil
         }
         .onDisappear {
             commitPingTarget()
@@ -115,14 +123,33 @@ struct SettingsView: View {
     }
 
     private func commitNumericSettings() {
-        if draftPingInterval != viewModel.pingInterval {
-            viewModel.pingInterval = draftPingInterval
+        let inputInterval = draftPingInterval
+        let inputGood = draftGoodThreshold
+        let inputDegraded = draftDegradedThreshold
+
+        viewModel.pingInterval = inputInterval
+        viewModel.goodThreshold = inputGood
+        viewModel.degradedThreshold = inputDegraded
+
+        let actualInterval = viewModel.pingInterval
+        let actualGood = viewModel.goodThreshold
+        let actualDegraded = viewModel.degradedThreshold
+
+        draftPingInterval = actualInterval
+        draftGoodThreshold = actualGood
+        draftDegradedThreshold = actualDegraded
+
+        var adjustments: [String] = []
+        if inputInterval != actualInterval {
+            adjustments.append("Interval clamped to \(Int(actualInterval))s (5–120s)")
         }
-        if draftGoodThreshold != viewModel.goodThreshold {
-            viewModel.goodThreshold = draftGoodThreshold
+        if inputGood != actualGood {
+            adjustments.append("Good threshold clamped to \(Int(actualGood))ms")
         }
-        if draftDegradedThreshold != viewModel.degradedThreshold {
-            viewModel.degradedThreshold = draftDegradedThreshold
+        if inputDegraded != actualDegraded {
+            adjustments.append("Degraded set to ≥ Good + 50ms (\(Int(actualDegraded))ms)")
         }
+
+        validationMessage = adjustments.isEmpty ? nil : adjustments.joined(separator: " • ")
     }
 }

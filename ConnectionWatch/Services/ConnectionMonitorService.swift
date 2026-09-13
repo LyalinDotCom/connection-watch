@@ -94,7 +94,7 @@ final class ConnectionMonitorService {
             self?.currentState ?? .disconnected
         }
 
-        networkMonitor.onStatusChange = { [weak self] connected in
+        networkMonitor.onPathChange = { [weak self] connected in
             guard let self, !self.isPaused else { return }
             self.lastPathChangeDate = Date()
             if !connected {
@@ -254,12 +254,5 @@ final class ConnectionMonitorService {
         if notificationsEnabled && newState != .paused {
             notificationService.notify(state: newState)
         }
-    }
-}
-
-extension Double {
-    func clamped(to range: ClosedRange<Double>, default defaultValue: Double) -> Double {
-        if self <= 0 { return defaultValue }
-        return min(max(self, range.lowerBound), range.upperBound)
     }
 }

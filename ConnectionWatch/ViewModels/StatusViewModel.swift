@@ -58,7 +58,7 @@ final class StatusViewModel {
         get { monitor.pingInterval }
         set {
             monitor.pingInterval = newValue
-            UserDefaults.standard.set(newValue, forKey: "pingInterval")
+            UserDefaults.standard.set(monitor.pingInterval, forKey: "pingInterval")
         }
     }
 
@@ -66,7 +66,8 @@ final class StatusViewModel {
         get { monitor.goodThreshold }
         set {
             monitor.goodThreshold = newValue
-            UserDefaults.standard.set(newValue, forKey: "goodThreshold")
+            UserDefaults.standard.set(monitor.goodThreshold, forKey: "goodThreshold")
+            UserDefaults.standard.set(monitor.degradedThreshold, forKey: "degradedThreshold")
         }
     }
 
@@ -74,7 +75,7 @@ final class StatusViewModel {
         get { monitor.degradedThreshold }
         set {
             monitor.degradedThreshold = newValue
-            UserDefaults.standard.set(newValue, forKey: "degradedThreshold")
+            UserDefaults.standard.set(monitor.degradedThreshold, forKey: "degradedThreshold")
         }
     }
 

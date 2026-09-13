@@ -1,25 +1,7 @@
 import Foundation
 
-private final class SpeedMetricsDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let lock = NSLock()
-    private var metricsByTaskIdentifier: [Int: URLSessionTaskMetrics] = [:]
-
-    func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
-        lock.lock()
-        metricsByTaskIdentifier[task.taskIdentifier] = metrics
-        lock.unlock()
-    }
-
-    func takeMetrics(for taskIdentifier: Int) -> URLSessionTaskMetrics? {
-        lock.lock()
-        defer { lock.unlock() }
-        return metricsByTaskIdentifier.removeValue(forKey: taskIdentifier)
-    }
-}
-
 actor SpeedTestService {
     private let session: URLSession
-    private let delegate = SpeedMetricsDelegate()
 
     static let smallPayloadURL = "https://speed.cloudflare.com/__down?bytes=250000"    // 250 KB (safe even on 1-2 Mbps links)
     static let mediumPayloadURL = "https://speed.cloudflare.com/__down?bytes=2000000"  // 2 MB (for fast links)
@@ -29,7 +11,7 @@ actor SpeedTestService {
         config.timeoutIntervalForRequest = 8.0
         config.timeoutIntervalForResource = 8.0
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        self.session = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
+        self.session = URLSession(configuration: config)
     }
 
     /// Strictly on-demand download speed measurement in Mbps.
@@ -73,11 +55,12 @@ actor SpeedTestService {
         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.timeoutInterval = 8.0
 
+        let metricsDelegate = URLSessionMetricsDelegate()
         let start = CFAbsoluteTimeGetCurrent()
 
         do {
-            let (data, response, taskID) = try await runDownloadTask(request: request)
-            let metrics = delegate.takeMetrics(for: taskID)
+            let (data, response) = try await session.data(for: request, delegate: metricsDelegate)
+            let metrics = metricsDelegate.collectedMetrics
             let wallElapsed = max(0.001, CFAbsoluteTimeGetCurrent() - start)
 
             guard let httpResponse = response as? HTTPURLResponse,
@@ -120,25 +103,6 @@ actor SpeedTestService {
             )
         } catch {
             return nil
-        }
-    }
-
-    private func runDownloadTask(request: URLRequest) async throws -> (Data, URLResponse, Int) {
-        try await withCheckedThrowingContinuation { continuation in
-            var taskID = 0
-            let task = session.dataTask(with: request) { [delegate] data, response, error in
-                if let error {
-                    _ = delegate.takeMetrics(for: taskID)
-                    continuation.resume(throwing: error)
-                } else if let data, let response {
-                    continuation.resume(returning: (data, response, taskID))
-                } else {
-                    _ = delegate.takeMetrics(for: taskID)
-                    continuation.resume(throwing: URLError(.badServerResponse))
-                }
-            }
-            taskID = task.taskIdentifier
-            task.resume()
         }
     }
 }

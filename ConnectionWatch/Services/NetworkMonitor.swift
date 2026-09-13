@@ -8,7 +8,7 @@ final class NetworkMonitor {
     private(set) var interfaceType: NWInterface.InterfaceType?
     private(set) var interfaceName: String = "Network"
 
-    var onStatusChange: ((Bool) -> Void)?
+    var onPathChange: ((Bool) -> Void)?
 
     private var monitor: NWPathMonitor?
     private var lastPathSignature: String?
@@ -35,7 +35,7 @@ final class NetworkMonitor {
                 self.lastPathSignature = signature
 
                 if statusChanged || signatureChanged {
-                    self.onStatusChange?(connected)
+                    self.onPathChange?(connected)
                 }
             }
         }
