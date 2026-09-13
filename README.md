@@ -1,83 +1,67 @@
 # ConnectionWatch
 
-A macOS menu bar app that tells you whether your internet is actually working — and if not, which part is broken.
+A macOS menu bar app that tells you whether your internet is actually working — and when it isn't, which part broke.
 
-![ConnectionWatch popover showing connection health, ping and HTTP latency, and a latency chart](docs/screenshot.png)
+![ConnectionWatch showing connection health, ping and HTTP latency, and a latency chart](docs/screenshot.png)
 
-## Why
+## Why it's useful
 
-Most connection monitors answer one question: *is there a link?* That's rarely the question you actually have. Your Wi-Fi says connected, your video call is stuttering, and you want to know whether it's your laptop, your router, or your ISP.
+"Connected" doesn't mean working. ConnectionWatch runs two independent probes — an ICMP ping burst and an HTTP request — and scores them separately, so when they disagree you get a diagnosis instead of a green dot:
 
-ConnectionWatch runs two independent probes and scores them separately, so the failure mode is visible:
+| Symptom | Likely cause |
+| --- | --- |
+| Ping fine, HTTP slow | DNS or the far end |
+| Both spiking together | Your local link |
+| High jitter, no loss | Congested Wi-Fi |
 
-- **Ping (ICMP)** — a 3-packet burst that measures raw network latency, jitter, and packet loss.
-- **HTTP** — a `HEAD` request that measures real time-to-first-byte, which is what your browser actually feels.
+It's quiet by design — background monitoring is one ping burst and one HTTP `HEAD` request every 10 seconds. The download speed test only runs when you press the button, because a monitor that saturates your connection to measure it is mostly measuring itself.
 
-When those two disagree, that *is* the diagnosis. Ping fine but HTTP slow means DNS or the far end. Both spiking together means your local link. High jitter with no loss means a congested Wi-Fi channel.
-
-**It stays out of the way.** Background probes cost roughly 100 bytes every 10 seconds. The download speed test only ever runs when you click the button — a monitor that saturates your connection to measure it is measuring its own interference.
-
-**It doesn't cry wolf.** Plenty of corporate, hotel, and VPN networks silently drop ICMP. ConnectionWatch detects that and scores on HTTP alone instead of showing a permanent red light on a perfectly good connection. State changes use a hysteresis band so a connection hovering at a threshold doesn't flap between good and degraded.
+It also won't cry wolf. Plenty of corporate, hotel, and VPN networks silently drop ICMP. ConnectionWatch notices and scores on HTTP alone instead of parking a red light on a perfectly good connection.
 
 ## Features
 
 - Live latency or health score right in the menu bar
 - 0–100 health score from latency, jitter, packet loss, and HTTP response time
 - Plain-language diagnostics — *"High jitter (±35ms)"*, *"ICMP filtered (using HTTP only)"*
-- Latency chart with Wave, Bars, and Pulse views, plus avg/min/max and loss
+- Latency chart with avg / min / max and packet loss
 - On-demand download speed test
-- Notifications when the connection changes state, rate limited so they don't nag
-- Pause monitoring when you don't want it running
+- Notifications on state changes, rate limited so they don't nag
 - Configurable ping target, probe interval, and thresholds
-- Launch at login
-- Universal binary — Apple Silicon and Intel
+- Launch at login · Universal binary (Apple Silicon + Intel)
 
 ## Install
 
-Grab the latest `.zip` from [**Releases**](../../releases), unzip, and drag **ConnectionWatch.app** to your Applications folder.
-
-Builds are ad-hoc signed but not notarized by Apple, so Gatekeeper blocks the first launch. Right-click the app → **Open** → **Open**. If macOS insists the app is damaged, clear the quarantine flag:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/ConnectionWatch.app
-```
-
 Requires macOS 14 or later.
 
-## Build from source
+### Option 1 — Download a build
+
+1. Download the latest `.zip` from [**Releases**](../../releases).
+2. Unzip it and drag **ConnectionWatch.app** into **Applications**.
+3. **First launch only:** right-click the app → **Open** → **Open**.
+
+> [!NOTE]
+> Releases are ad-hoc signed but not notarized by Apple, so macOS blocks them on first launch. Step 3 gets you past it. If you instead see *"ConnectionWatch is damaged and can't be opened"*, clear the quarantine flag:
+> ```sh
+> xattr -dr com.apple.quarantine /Applications/ConnectionWatch.app
+> ```
+
+### Option 2 — Build it yourself
 
 ```sh
 git clone https://github.com/LyalinDotCom/connection-watch.git
 cd connection-watch
-xcodebuild -scheme ConnectionWatch -configuration Release build
+xcodebuild -scheme ConnectionWatch -configuration Release -derivedDataPath build
+open build/Build/Products/Release
 ```
 
-Run the tests with:
+No dependencies and no package manager — or just open `ConnectionWatch.xcodeproj` and hit Run.
 
-```sh
-xcodebuild -scheme ConnectionWatchTests -destination 'platform=macOS' test
-```
+## Heads up
 
-No dependencies, no package manager — just open `ConnectionWatch.xcodeproj` in Xcode if you prefer.
+This is a side hobby project. I build it for myself, on my own schedule, with no roadmap and no support.
 
-## How it works
-
-A polling loop runs the ICMP and HTTP probes in parallel every 10 seconds, dropping to 5 seconds while the connection is degraded or just after a network change. Results land in a 240-sample ring buffer.
-
-The health score weights ping latency at 35%, stability (packet loss and jitter) at 35%, and HTTP latency at 30%. Severe problems — a failed HTTP probe, heavy packet loss — force a degraded state regardless of the arithmetic. Only a genuinely unreachable network reports as disconnected; a slow-but-working link is always degraded, never "down".
-
-HTTP probes rotate across Google, Cloudflare, and Apple connectivity-check endpoints and fall back to a second host before reporting a failure, so one CDN hiccup doesn't trigger a false alarm.
-
-The app isn't sandboxed, because it shells out to `/sbin/ping`.
-
-## Project status
-
-This is a side hobby project. I build it for myself, I work on it when I feel like it, and there's no roadmap or support commitment.
-
-**I'm not accepting pull requests or taking feature requests.** Please don't open PRs — I won't merge them. Bug reports are fine if something is genuinely broken, but I make no promises about fixing them.
-
-If you want it to do something different, fork it. That's what the license is for.
+**I'm not accepting pull requests or feature requests.** If you want it to work differently, fork it — that's what the license is for.
 
 ## License
 
-[Apache License 2.0](LICENSE). Copy it, fork it, ship it, do whatever you want with it.
+[Apache 2.0](LICENSE). Copy it, fork it, ship it.
