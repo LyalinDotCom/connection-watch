@@ -145,7 +145,7 @@ struct PopoverContentView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
 
-            // 3. Triple Probe Cards Row (Ping | HTTP | Speed)
+            // 3. Triple Probe Readout Displays Row (Ping | HTTP | Speed — pure read-only displays)
             HStack(spacing: 8) {
                 pingCard()
                 httpCard()
@@ -202,8 +202,26 @@ struct PopoverContentView: View {
 
             Spacer(minLength: 0)
 
-            // 6. Bottom Control Bar
+            // 6. Bottom Action Button Bar (All interactive commands live here)
             HStack(spacing: 8) {
+                Button {
+                    viewModel.runSpeedTestNow()
+                } label: {
+                    HStack(spacing: 5) {
+                        if viewModel.isTestingSpeed {
+                            ProgressView()
+                                .controlSize(.small)
+                                .scaleEffect(0.65)
+                        } else {
+                            Image(systemName: "speedometer")
+                        }
+                        Text(viewModel.isTestingSpeed ? "Testing..." : "Test Speed")
+                    }
+                }
+                .buttonStyle(ModernMacButtonStyle(prominent: true, tintColor: .indigo))
+                .disabled(viewModel.isTestingSpeed || viewModel.isPaused)
+                .help("Run on-demand download speed probe")
+
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.84)) {
                         showSettings = true
@@ -212,18 +230,6 @@ struct PopoverContentView: View {
                     HStack(spacing: 5) {
                         Image(systemName: "slider.horizontal.3")
                         Text("Settings")
-                    }
-                }
-                .buttonStyle(ModernMacButtonStyle())
-
-                Button {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.78)) {
-                        viewModel.togglePause()
-                    }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: viewModel.isPaused ? "play.fill" : "pause.fill")
-                        Text(viewModel.isPaused ? "Resume" : "Pause")
                     }
                 }
                 .buttonStyle(ModernMacButtonStyle())
@@ -244,7 +250,7 @@ struct PopoverContentView: View {
         }
     }
 
-    // MARK: - Metric Cards
+    // MARK: - Pure Read-Only Metric Displays
 
     private func pingCard() -> some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -284,7 +290,7 @@ struct PopoverContentView: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .hoverableCard(accentColor: .cyan)
+        .staticMetricCard()
     }
 
     private func httpCard() -> some View {
@@ -320,7 +326,7 @@ struct PopoverContentView: View {
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .hoverableCard(accentColor: .blue)
+        .staticMetricCard()
     }
 
     private func downloadCard() -> some View {
@@ -332,13 +338,12 @@ struct PopoverContentView: View {
                 Text("SPEED")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
             }
 
             if let mbps = viewModel.latestDownloadSpeedMbps {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(String(format: "%.1f", mbps))
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .contentTransition(.numericText())
                     Text("Mbps")
@@ -351,31 +356,29 @@ struct PopoverContentView: View {
                         .controlSize(.small)
                         .scaleEffect(0.65)
                     Text("Testing...")
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
             } else {
-                Text("On demand")
-                    .font(.system(size: 12, weight: .medium))
+                Text("—")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.secondary)
             }
 
-            Button {
-                viewModel.runSpeedTestNow()
-            } label: {
-                HStack(spacing: 3) {
-                    Image(systemName: viewModel.isTestingSpeed ? "arrow.down.circle.dotted" : "speedometer")
-                        .font(.system(size: 9))
-                    Text(viewModel.isTestingSpeed ? "Running..." : "Test Speed")
-                        .font(.system(size: 10, weight: .medium))
-                }
+            if let date = viewModel.latestDownloadSpeedDate {
+                Text(relativeAgeString(from: date))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+            } else {
+                Text("Not tested yet")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.accentColor)
-            .disabled(viewModel.isTestingSpeed || viewModel.isPaused)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .hoverableCard(accentColor: .indigo)
+        .staticMetricCard()
     }
 
     private func statBadge(_ label: String, value: Double?) -> some View {
@@ -394,5 +397,16 @@ struct PopoverContentView: View {
             return host.replacingOccurrences(of: "www.", with: "")
         }
         return urlString
+    }
+
+    private func relativeAgeString(from date: Date) -> String {
+        let elapsed = Int(Date().timeIntervalSince(date))
+        if elapsed < 5 {
+            return "Just now"
+        } else if elapsed < 60 {
+            return "\(elapsed)s ago"
+        } else {
+            return "\(elapsed / 60)m ago"
+        }
     }
 }

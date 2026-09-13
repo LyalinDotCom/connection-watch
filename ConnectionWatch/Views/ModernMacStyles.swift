@@ -88,39 +88,24 @@ struct ModernIconButtonStyle: ButtonStyle {
     }
 }
 
-struct HoverableCardModifier: ViewModifier {
-    var accentColor: Color = .accentColor
-    @State private var isHovered = false
-
+struct StaticMetricCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(
-                        isHovered
-                            ? Color(nsColor: .controlBackgroundColor).opacity(0.85)
-                            : Color(nsColor: .controlBackgroundColor).opacity(0.5)
-                    )
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .stroke(
-                        isHovered ? accentColor.opacity(0.35) : Color.primary.opacity(0.08),
-                        lineWidth: 1
-                    )
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
             )
-            .scaleEffect(isHovered ? 1.01 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: isHovered)
-            .onHover { hovering in
-                isHovered = hovering
-            }
     }
 }
 
 extension View {
-    func hoverableCard(accentColor: Color = .accentColor) -> some View {
-        modifier(HoverableCardModifier(accentColor: accentColor))
+    func staticMetricCard() -> some View {
+        modifier(StaticMetricCardModifier())
     }
 }
