@@ -15,7 +15,7 @@ struct ConnectionWatchApp: App {
             )
         }
         .menuBarExtraStyle(.window)
-        .defaultSize(width: 380, height: 470)
+        .defaultSize(width: PopoverMetrics.width, height: PopoverMetrics.height)
         .onChange(of: viewModel.currentState) { }
     }
 

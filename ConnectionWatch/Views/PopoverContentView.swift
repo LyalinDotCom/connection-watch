@@ -1,5 +1,14 @@
 import SwiftUI
 
+/// Fixed geometry for the menu bar popover. The window is deliberately a fixed size:
+/// nothing inside it is allowed to grow the window or shift the layout at runtime.
+enum PopoverMetrics {
+    static let width: CGFloat = 440
+    static let height: CGFloat = 540
+    /// Padding between the window edge and the dashboard content.
+    static let contentPadding: CGFloat = 14
+}
+
 struct PopoverContentView: View {
     @Bindable var viewModel: StatusViewModel
 
@@ -35,8 +44,8 @@ struct PopoverContentView: View {
                 .zIndex(1)
             }
         }
-        .padding(14)
-        .frame(width: 380, height: 470)
+        .padding(PopoverMetrics.contentPadding)
+        .frame(width: PopoverMetrics.width, height: PopoverMetrics.height)
         .background(.ultraThinMaterial)
     }
 
@@ -169,7 +178,7 @@ struct PopoverContentView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
-                .frame(height: 175)
+                .frame(height: ChartMetrics.cardHeight)
                 .frame(maxWidth: .infinity)
                 .background(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)

@@ -17,6 +17,27 @@ enum ChartDisplayMode: String, CaseIterable, Identifiable {
     }
 }
 
+/// Fixed geometry for the chart card. Every value here is deliberately constant so that
+/// switching display modes cannot reflow, resize, or wrap any part of the card.
+enum ChartMetrics {
+    /// Height of the plot area itself.
+    static let plotHeight: CGFloat = 200
+    /// Height of the legend + mode switcher row.
+    static let headerHeight: CGFloat = 24
+    static let headerToPlotSpacing: CGFloat = 8
+    static let cardPadding: CGFloat = 10
+    /// Width reserved for each segment of the mode switcher. Sized for the widest
+    /// label so the bar does not change width as the selection moves.
+    static let modeSegmentWidth: CGFloat = 66
+    static let modeSegmentHeight: CGFloat = 18
+
+    /// Total height of the card, used by the empty state so the dashboard does not
+    /// jump when the first samples arrive.
+    static var cardHeight: CGFloat {
+        headerHeight + headerToPlotSpacing + plotHeight + cardPadding * 2
+    }
+}
+
 struct LatencyChartView: View {
     let history: PingHistory
     var goodThreshold: Double = 200
@@ -26,18 +47,20 @@ struct LatencyChartView: View {
     @State private var hoverDate: Date?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: ChartMetrics.headerToPlotSpacing) {
             // Chart Header Bar: Legend + Segmented Mode Switcher
             HStack(spacing: 8) {
                 HStack(spacing: 10) {
                     legendItem("HTTP", color: .blue)
                     legendItem("Ping", color: .cyan)
-                    if displayMode == .pulse {
-                        legendItem("Jitter", color: .teal.opacity(0.6))
-                    }
+                    // Jitter is only plotted in pulse mode, but its slot is reserved in
+                    // every mode so the row keeps one constant width.
+                    legendItem("Jitter", color: .teal.opacity(0.6))
+                        .opacity(displayMode == .pulse ? 1 : 0)
+                        .accessibilityHidden(displayMode != .pulse)
                 }
 
-                Spacer()
+                Spacer(minLength: 8)
 
                 // Sleek Segmented Mode Pill Bar
                 HStack(spacing: 2) {
@@ -56,7 +79,11 @@ struct LatencyChartView: View {
                 .padding(2)
                 .background(Color.primary.opacity(0.06))
                 .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                // The switcher is a control, not filler: it keeps its size instead of
+                // being squeezed by whatever else shares the row.
+                .fixedSize()
             }
+            .frame(height: ChartMetrics.headerHeight)
 
             // Main Chart
             Chart {
@@ -259,10 +286,10 @@ struct LatencyChartView: View {
                         }
                 }
             }
-            .frame(height: 155)
+            .frame(height: ChartMetrics.plotHeight)
             .clipped()
         }
-        .padding(10)
+        .padding(ChartMetrics.cardPadding)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.55))
@@ -281,6 +308,8 @@ struct LatencyChartView: View {
             Text(label)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .fixedSize()
         }
     }
 
@@ -370,9 +399,12 @@ private struct ModePillButton: View {
                     .font(.system(size: 10, weight: .semibold))
                 Text(mode.rawValue)
                     .font(.system(size: 10, weight: .medium))
+                    .lineLimit(1)
+                    .fixedSize()
             }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
+            // Fixed size rather than padding: the weight of the label must not change
+            // the segment's width, and the label must never wrap.
+            .frame(width: ChartMetrics.modeSegmentWidth, height: ChartMetrics.modeSegmentHeight)
             .foregroundStyle(isSelected ? Color.white : (isHovered ? Color.primary : Color.secondary))
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
@@ -380,6 +412,7 @@ private struct ModePillButton: View {
             )
         }
         .buttonStyle(.plain)
+        .help("Show the \(mode.rawValue.lowercased()) view")
         .onHover { hovering in
             isHovered = hovering
         }
