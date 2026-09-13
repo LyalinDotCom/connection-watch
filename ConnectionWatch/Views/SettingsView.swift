@@ -8,12 +8,24 @@ struct SettingsView: View {
     @State private var draftGoodThreshold: Double = 150
     @State private var draftDegradedThreshold: Double = 600
 
+    private var appVersionString: String {
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.1.0"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "2"
+        return "v\(shortVersion) (build \(buildNumber))"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Divider()
 
-            Text("Settings")
-                .font(.subheadline.bold())
+            HStack {
+                Text("Settings")
+                    .font(.subheadline.bold())
+                Spacer()
+                Text(appVersionString)
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
 
             Toggle("Launch at Login", isOn: $viewModel.launchAtLogin)
                 .toggleStyle(.switch)
@@ -74,6 +86,15 @@ struct SettingsView: View {
                 }
             }
             .font(.caption)
+
+            HStack {
+                Spacer()
+                Text("ConnectionWatch \(appVersionString)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                Spacer()
+            }
+            .padding(.top, 2)
         }
         .onAppear {
             draftPingTarget = viewModel.pingTarget
