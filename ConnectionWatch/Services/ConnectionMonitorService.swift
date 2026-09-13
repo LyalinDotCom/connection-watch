@@ -36,6 +36,11 @@ final class ConnectionMonitorService {
     @ObservationIgnored
     var pingInterval: TimeInterval = UserDefaults.standard.double(forKey: "pingInterval").clamped(to: 5...120, default: 10) {
         didSet {
+            let clampedVal = pingInterval.clamped(to: 5...120, default: 10)
+            if pingInterval != clampedVal {
+                pingInterval = clampedVal
+                return
+            }
             if isMonitoring && !isPaused && pingInterval != oldValue {
                 restartPollingLoop()
             }
@@ -45,6 +50,14 @@ final class ConnectionMonitorService {
     @ObservationIgnored
     var goodThreshold: Double = UserDefaults.standard.double(forKey: "goodThreshold").clamped(to: 50...2000, default: 150) {
         didSet {
+            let clampedVal = goodThreshold.clamped(to: 50...2000, default: 150)
+            if goodThreshold != clampedVal {
+                goodThreshold = clampedVal
+                return
+            }
+            if degradedThreshold < goodThreshold + 50 {
+                degradedThreshold = min(5000, goodThreshold + 50)
+            }
             recalculateHealth()
         }
     }
@@ -52,6 +65,11 @@ final class ConnectionMonitorService {
     @ObservationIgnored
     var degradedThreshold: Double = UserDefaults.standard.double(forKey: "degradedThreshold").clamped(to: 100...5000, default: 600) {
         didSet {
+            let clampedVal = max(goodThreshold + 50, degradedThreshold.clamped(to: 100...5000, default: 600))
+            if degradedThreshold != clampedVal {
+                degradedThreshold = clampedVal
+                return
+            }
             recalculateHealth()
         }
     }
@@ -155,9 +173,10 @@ final class ConnectionMonitorService {
     }
 
     /// Adaptive interval: probe every 5s when degraded/disconnected/after path change, or `pingInterval` (default 10s) when healthy.
-    private func effectivePollingInterval() -> TimeInterval {
+    func effectivePollingInterval() -> TimeInterval {
         let recentlyChanged = Date().timeIntervalSince(lastPathChangeDate) < 20
-        if currentState == .degraded || currentState == .disconnected || health.recentPacketLoss > 0 || recentlyChanged {
+        let hasEffectiveLoss = !health.isICMPBlocked && health.recentPacketLoss > 0
+        if currentState == .degraded || currentState == .disconnected || hasEffectiveLoss || recentlyChanged {
             return min(pingInterval, 5.0)
         }
         return pingInterval
@@ -211,6 +230,7 @@ final class ConnectionMonitorService {
         let latestHTTP = history.latestHTTP
         let latestSpeed = history.latestDownloadSpeedMbps
         let rawPingLoss = history.rawRecentPingPacketLoss(window: 8)
+        let icmpBlocked = history.isICMPLikelyBlocked
 
         let evaluated = NetworkHealth.evaluate(
             isConnected: networkMonitor.isConnected,
@@ -221,6 +241,7 @@ final class ConnectionMonitorService {
             downloadSpeedMbps: latestSpeed,
             goodThreshold: goodThreshold,
             degradedThreshold: degradedThreshold,
+            isICMPBlocked: icmpBlocked,
             previousState: currentState
         )
 
@@ -236,9 +257,9 @@ final class ConnectionMonitorService {
     }
 }
 
-private extension Double {
+extension Double {
     func clamped(to range: ClosedRange<Double>, default defaultValue: Double) -> Double {
-        if self == 0 { return defaultValue }
+        if self <= 0 { return defaultValue }
         return min(max(self, range.lowerBound), range.upperBound)
     }
 }

@@ -7,11 +7,12 @@ struct NetworkHealth: Sendable, Equatable {
     let ratingLabel: String        // e.g. "Excellent", "Good", "Fair", "Poor", "Offline"
     let reasons: [String]          // Diagnostic reasons if degraded/poor
     let isInformationalNoteOnly: Bool // True when reasons are informational (e.g. ICMP blocked on healthy HTTP)
+    let isICMPBlocked: Bool        // True when ICMP is filtered while HTTP connectivity works
     let pingLatency: Double?
     let jitter: Double?
     let httpLatency: Double?
     let downloadSpeedMbps: Double? // Purely informational (on-demand only, does not affect score)
-    let recentPacketLoss: Double   // 0...100%
+    let recentPacketLoss: Double   // 0...100% effective packet loss
 
     static let initial = NetworkHealth(
         score: 100,
@@ -19,6 +20,7 @@ struct NetworkHealth: Sendable, Equatable {
         ratingLabel: "Good",
         reasons: [],
         isInformationalNoteOnly: false,
+        isICMPBlocked: false,
         pingLatency: nil,
         jitter: nil,
         httpLatency: nil,
@@ -35,6 +37,7 @@ struct NetworkHealth: Sendable, Equatable {
         downloadSpeedMbps: Double?,
         goodThreshold: Double,
         degradedThreshold: Double,
+        isICMPBlocked: Bool? = nil,
         previousState: ConnectionState = .good
     ) -> NetworkHealth {
         // Offline check: link down OR both ping and HTTP failed
@@ -45,6 +48,7 @@ struct NetworkHealth: Sendable, Equatable {
                 ratingLabel: "Offline",
                 reasons: ["Connection unreachable"],
                 isInformationalNoteOnly: false,
+                isICMPBlocked: false,
                 pingLatency: pingLatency,
                 jitter: jitter,
                 httpLatency: httpLatency,
@@ -53,10 +57,12 @@ struct NetworkHealth: Sendable, Equatable {
             )
         }
 
-        // Check if ICMP is blocked on a corporate/hotel/VPN network where HTTP works
-        let icmpLikelyBlocked = pingLatency == nil
+        // Single source of truth for ICMP-blocked network detection
+        let icmpBlocked = isICMPBlocked ?? (
+            pingLatency == nil
             && recentPacketLoss >= 99
             && httpLatency != nil
+        )
 
         var reasons: [String] = []
         var informationalNote = false
@@ -79,14 +85,14 @@ struct NetworkHealth: Sendable, Equatable {
             }
         } else {
             pingScore = 50
-            if !icmpLikelyBlocked {
+            if !icmpBlocked {
                 reasons.append("ICMP ping timeout")
             }
         }
 
         // 2. Stability Score (Packet Loss & Jitter) (0-100) — Weight: 35%
         var stabilityScore: Double = 100
-        if !icmpLikelyBlocked && recentPacketLoss > 0 {
+        if !icmpBlocked && recentPacketLoss > 0 {
             stabilityScore -= min(85, recentPacketLoss * 2.5)
             if recentPacketLoss >= 5 {
                 reasons.append(String(format: "Packet loss (%.0f%%)", recentPacketLoss))
@@ -114,7 +120,8 @@ struct NetworkHealth: Sendable, Equatable {
                 httpScore = 75 - (ratio * 50)
                 reasons.append(String(format: "Slow HTTP (%.0fms)", httpLatency))
             } else {
-                httpScore = 15
+                // Continuous ramp above degradedThreshold instead of a flat 15 cliff
+                httpScore = max(5, 25 - (httpLatency - degradedThreshold) / 100)
                 reasons.append(String(format: "Very slow HTTP (%.0fms)", httpLatency))
             }
         } else {
@@ -124,7 +131,7 @@ struct NetworkHealth: Sendable, Equatable {
 
         // Weighted composite
         var rawScore: Double
-        if icmpLikelyBlocked {
+        if icmpBlocked {
             rawScore = httpScore
             if reasons.isEmpty {
                 reasons.append("ICMP filtered (using HTTP only)")
@@ -148,7 +155,7 @@ struct NetworkHealth: Sendable, Equatable {
         // Hysteresis dead-band around score 70 to prevent oscillation
         let goodCutoff: Int = (previousState == .degraded) ? 73 : 68
 
-        let state: ConnectionState
+        var state: ConnectionState
         let ratingLabel: String
         if finalScore >= 85 {
             state = .good
@@ -164,8 +171,15 @@ struct NetworkHealth: Sendable, Equatable {
             ratingLabel = "Poor"
         } else {
             state = .disconnected
-            ratingLabel = "Critical"
+            ratingLabel = "Poor"
         }
+
+        // R1 Fix: A working connection (early offline check did not fire) is degraded, never "down".
+        if state == .disconnected {
+            state = .degraded
+        }
+
+        let effectiveLoss = icmpBlocked ? 0.0 : recentPacketLoss
 
         return NetworkHealth(
             score: finalScore,
@@ -173,11 +187,12 @@ struct NetworkHealth: Sendable, Equatable {
             ratingLabel: ratingLabel,
             reasons: reasons,
             isInformationalNoteOnly: informationalNote && state == .good,
+            isICMPBlocked: icmpBlocked,
             pingLatency: pingLatency,
             jitter: jitter,
             httpLatency: httpLatency,
             downloadSpeedMbps: downloadSpeedMbps,
-            recentPacketLoss: recentPacketLoss
+            recentPacketLoss: effectiveLoss
         )
     }
 }

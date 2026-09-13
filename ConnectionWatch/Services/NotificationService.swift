@@ -3,16 +3,20 @@ import UserNotifications
 
 @MainActor
 final class NotificationService {
-    private lazy var center = UNUserNotificationCenter.current()
     private var lastNotificationDate: Date?
     private let cooldown: TimeInterval = 30
     private var lastNotifiedState: ConnectionState?
     private var deferredCheckTask: Task<Void, Never>?
     private var currentStateProvider: (() -> ConnectionState)?
 
+    private var canUseUserNotifications: Bool {
+        Bundle.main.bundleURL.pathExtension == "app"
+    }
+
     func requestAuthorization() {
+        guard canUseUserNotifications else { return }
         Task {
-            try? await center.requestAuthorization(options: [.alert, .sound])
+            try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
         }
     }
 
@@ -41,6 +45,8 @@ final class NotificationService {
         lastNotifiedState = state
         lastNotificationDate = Date()
 
+        guard canUseUserNotifications else { return }
+
         let content = UNMutableNotificationContent()
         content.title = state.notificationTitle
         content.body = state.notificationBody
@@ -52,7 +58,7 @@ final class NotificationService {
             trigger: nil
         )
 
-        center.add(request)
+        UNUserNotificationCenter.current().add(request)
     }
 
     private func scheduleDeferredCheck() {

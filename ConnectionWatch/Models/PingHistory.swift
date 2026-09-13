@@ -28,10 +28,11 @@ struct PingHistory: Sendable {
         latestPing?.jitter
     }
 
-    /// True if all recent ping probes failed while recent HTTP probes succeeded (ICMP filtered).
+    /// Single source of truth for whether ICMP is filtered while HTTP connectivity works.
+    /// True if all recent ping probes in the window failed while at least one recent HTTP probe succeeded.
     var isICMPLikelyBlocked: Bool {
-        let recentPings = buffer.filter { $0.probeType == .ping }.suffix(4)
-        let recentHTTPs = buffer.filter { $0.probeType == .http }.suffix(4)
+        let recentPings = buffer.filter { $0.probeType == .ping }.suffix(6)
+        let recentHTTPs = buffer.filter { $0.probeType == .http }.suffix(6)
         guard !recentPings.isEmpty, !recentHTTPs.isEmpty else { return false }
         let allPingsFailed = recentPings.allSatisfy { !$0.succeeded }
         let anyHTTPSucceeded = recentHTTPs.contains { $0.succeeded }
@@ -69,13 +70,19 @@ struct PingHistory: Sendable {
     }
 
     var packetLoss: Double {
+        if isICMPLikelyBlocked {
+            let httpEntries = buffer.filter { $0.probeType == .http }
+            guard !httpEntries.isEmpty else { return 0 }
+            let failedHTTP = httpEntries.filter { !$0.succeeded }.count
+            return Double(failedHTTP) / Double(httpEntries.count) * 100
+        }
         let pings = buffer.filter { $0.probeType == .ping }
         guard !pings.isEmpty else { return 0 }
         let failed = pings.filter { !$0.succeeded }.count
         return Double(failed) / Double(pings.count) * 100
     }
 
-    /// Raw packet loss over the most recent `window` ICMP ping probes (used for ICMP-blocked detection).
+    /// Raw packet loss over the most recent `window` ICMP ping probes.
     func rawRecentPingPacketLoss(window: Int = 8) -> Double {
         let pingEntries = buffer.filter { $0.probeType == .ping }.suffix(window)
         guard !pingEntries.isEmpty else { return 0 }
@@ -93,14 +100,13 @@ struct PingHistory: Sendable {
     /// Effective packet loss percentage over the most recent `window` probes.
     /// If ICMP is blocked (all pings fail while HTTP succeeds), falls back to HTTP probe failure rate.
     func recentPacketLoss(window: Int = 8) -> Double {
-        let pingLoss = rawRecentPingPacketLoss(window: window)
-        if pingLoss >= 99.0 && isICMPLikelyBlocked {
+        if isICMPLikelyBlocked {
             let httpEntries = buffer.filter { $0.probeType == .http }.suffix(window)
             guard !httpEntries.isEmpty else { return 0 }
             let failedHTTP = httpEntries.filter { !$0.succeeded }.count
             return Double(failedHTTP) / Double(httpEntries.count) * 100.0
         }
-        return pingLoss
+        return rawRecentPingPacketLoss(window: window)
     }
 
     func averageLatency(ofType type: ProbeType) -> Double? {

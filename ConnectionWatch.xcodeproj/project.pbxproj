@@ -33,6 +33,12 @@
 		A10018000000000000000018 /* SpeedTestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20018000000000000000018 /* SpeedTestService.swift */; };
 		A10019000000000000000019 /* NetworkHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20019000000000000000019 /* NetworkHealthTests.swift */; };
 		A10024000000000000000024 /* NetworkHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20017000000000000000017 /* NetworkHealth.swift */; };
+		A10025000000000000000025 /* ConnectionMonitorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20007000000000000000007 /* ConnectionMonitorService.swift */; };
+		A10026000000000000000026 /* PingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20005000000000000000005 /* PingService.swift */; };
+		A10027000000000000000027 /* HTTPProbeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20016000000000000000016 /* HTTPProbeService.swift */; };
+		A10028000000000000000028 /* SpeedTestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20018000000000000000018 /* SpeedTestService.swift */; };
+		A10029000000000000000029 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20006000000000000000006 /* NetworkMonitor.swift */; };
+		A1002A00000000000000002A /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20008000000000000000008 /* NotificationService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -315,6 +321,12 @@
 				A10022000000000000000022 /* PingResult.swift in Sources */,
 				A10023000000000000000023 /* ConnectionState.swift in Sources */,
 				A10024000000000000000024 /* NetworkHealth.swift in Sources */,
+				A10025000000000000000025 /* ConnectionMonitorService.swift in Sources */,
+				A10026000000000000000026 /* PingService.swift in Sources */,
+				A10027000000000000000027 /* HTTPProbeService.swift in Sources */,
+				A10028000000000000000028 /* SpeedTestService.swift in Sources */,
+				A10029000000000000000029 /* NetworkMonitor.swift in Sources */,
+				A1002A00000000000000002A /* NotificationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
