@@ -212,6 +212,9 @@ struct LatencyChartView: View {
                 }
             }
             .chartYScale(domain: 0...maxChartValue)
+            .chartPlotStyle { plotArea in
+                plotArea.clipped()
+            }
             .chartForegroundStyleScale([
                 "HTTP": .blue,
                 "Ping": .cyan,
@@ -257,6 +260,7 @@ struct LatencyChartView: View {
                 }
             }
             .frame(height: 155)
+            .clipped()
         }
         .padding(10)
         .background(
@@ -281,8 +285,14 @@ struct LatencyChartView: View {
     }
 
     private var maxChartValue: Double {
-        let maxLatency = history.maxLatency ?? degradedThreshold
-        let calculatedMax = max(maxLatency * 1.2, goodThreshold * 1.6)
+        let maxHTTP = history.entries(ofType: .http).compactMap(\.latency).max() ?? 0
+        let maxPingWithJitter = history.entries(ofType: .ping).compactMap { entry -> Double? in
+            guard let lat = entry.latency else { return nil }
+            return lat + (entry.jitter ?? 0)
+        }.max() ?? 0
+
+        let peak = max(maxHTTP, maxPingWithJitter, history.maxLatency ?? 0)
+        let calculatedMax = max(peak * 1.25, goodThreshold * 1.6)
         return calculatedMax > 10 ? calculatedMax : 200.0
     }
 
