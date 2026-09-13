@@ -29,6 +29,10 @@
 		A10021000000000000000021 /* PingHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20004000000000000000004 /* PingHistory.swift */; };
 		A10022000000000000000022 /* PingResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20003000000000000000003 /* PingResult.swift */; };
 		A10023000000000000000023 /* ConnectionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20002000000000000000002 /* ConnectionState.swift */; };
+		A10017000000000000000017 /* NetworkHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20017000000000000000017 /* NetworkHealth.swift */; };
+		A10018000000000000000018 /* SpeedTestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20018000000000000000018 /* SpeedTestService.swift */; };
+		A10019000000000000000019 /* NetworkHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20019000000000000000019 /* NetworkHealthTests.swift */; };
+		A10024000000000000000024 /* NetworkHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20017000000000000000017 /* NetworkHealth.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +55,9 @@
 		A20007000000000000000007 /* ConnectionMonitorService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionMonitorService.swift; sourceTree = "<group>"; };
 		A20008000000000000000008 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		A20016000000000000000016 /* HTTPProbeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPProbeService.swift; sourceTree = "<group>"; };
+		A20017000000000000000017 /* NetworkHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkHealth.swift; sourceTree = "<group>"; };
+		A20018000000000000000018 /* SpeedTestService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeedTestService.swift; sourceTree = "<group>"; };
+		A20019000000000000000019 /* NetworkHealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkHealthTests.swift; sourceTree = "<group>"; };
 		A20009000000000000000009 /* StatusViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusViewModel.swift; sourceTree = "<group>"; };
 		A2000A00000000000000000A /* StatusItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemView.swift; sourceTree = "<group>"; };
 		A2000B00000000000000000B /* PopoverContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopoverContentView.swift; sourceTree = "<group>"; };
@@ -132,6 +139,7 @@
 				A20002000000000000000002 /* ConnectionState.swift */,
 				A20003000000000000000003 /* PingResult.swift */,
 				A20004000000000000000004 /* PingHistory.swift */,
+				A20017000000000000000017 /* NetworkHealth.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -144,6 +152,7 @@
 				A20007000000000000000007 /* ConnectionMonitorService.swift */,
 				A20008000000000000000008 /* NotificationService.swift */,
 				A20016000000000000000016 /* HTTPProbeService.swift */,
+				A20018000000000000000018 /* SpeedTestService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -172,6 +181,7 @@
 			children = (
 				A20010000000000000000010 /* PingOutputParserTests.swift */,
 				A20011000000000000000011 /* PingHistoryTests.swift */,
+				A20019000000000000000019 /* NetworkHealthTests.swift */,
 			);
 			path = ConnectionWatchTests;
 			sourceTree = "<group>";
@@ -288,6 +298,8 @@
 				A1000D00000000000000000D /* SettingsView.swift in Sources */,
 				A1000E00000000000000000E /* PingOutputParser.swift in Sources */,
 				A10016000000000000000016 /* HTTPProbeService.swift in Sources */,
+				A10017000000000000000017 /* NetworkHealth.swift in Sources */,
+				A10018000000000000000018 /* SpeedTestService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,10 +309,12 @@
 			files = (
 				A10010000000000000000010 /* PingOutputParserTests.swift in Sources */,
 				A10011000000000000000011 /* PingHistoryTests.swift in Sources */,
+				A10019000000000000000019 /* NetworkHealthTests.swift in Sources */,
 				A10020000000000000000020 /* PingOutputParser.swift in Sources */,
 				A10021000000000000000021 /* PingHistory.swift in Sources */,
 				A10022000000000000000022 /* PingResult.swift in Sources */,
 				A10023000000000000000023 /* ConnectionState.swift in Sources */,
+				A10024000000000000000024 /* NetworkHealth.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

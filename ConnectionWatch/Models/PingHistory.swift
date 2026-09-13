@@ -18,6 +18,15 @@ struct PingHistory: Sendable {
 
     var latestPing: PingResult? { buffer.last { $0.probeType == .ping } }
     var latestHTTP: PingResult? { buffer.last { $0.probeType == .http } }
+    var latestSpeed: PingResult? { buffer.last { $0.probeType == .speed } }
+
+    var latestDownloadSpeedMbps: Double? {
+        buffer.last { $0.probeType == .speed && $0.downloadSpeedMbps != nil }?.downloadSpeedMbps
+    }
+
+    var latestJitter: Double? {
+        latestPing?.jitter
+    }
 
     func entries(ofType type: ProbeType) -> [PingResult] {
         buffer.filter { $0.probeType == type }
@@ -28,23 +37,40 @@ struct PingHistory: Sendable {
     }
 
     var averageLatency: Double? {
-        let latencies = buffer.compactMap(\.latency)
+        let latencies = buffer.filter { $0.probeType != .speed }.compactMap(\.latency)
         guard !latencies.isEmpty else { return nil }
         return latencies.reduce(0, +) / Double(latencies.count)
     }
 
     var minLatency: Double? {
-        buffer.compactMap(\.latency).min()
+        buffer.filter { $0.probeType != .speed }.compactMap(\.latency).min()
     }
 
     var maxLatency: Double? {
-        buffer.compactMap(\.latency).max()
+        buffer.filter { $0.probeType != .speed }.compactMap(\.latency).max()
     }
 
     var packetLoss: Double {
-        guard !buffer.isEmpty else { return 0 }
-        let failed = buffer.filter { !$0.succeeded }.count
-        return Double(failed) / Double(buffer.count) * 100
+        let relevant = buffer.filter { $0.probeType != .speed }
+        guard !relevant.isEmpty else { return 0 }
+        let failed = relevant.filter { !$0.succeeded }.count
+        return Double(failed) / Double(relevant.count) * 100
+    }
+
+    /// Calculates packet loss percentage over the most recent `window` ping probes
+    /// so sudden network degradation is detected immediately.
+    func recentPacketLoss(window: Int = 8) -> Double {
+        let pingEntries = buffer.filter { $0.probeType == .ping }.suffix(window)
+        guard !pingEntries.isEmpty else { return 0 }
+        var totalLoss: Double = 0
+        for entry in pingEntries {
+            if let explicitLoss = entry.packetLossPercent {
+                totalLoss += explicitLoss
+            } else {
+                totalLoss += entry.succeeded ? 0.0 : 100.0
+            }
+        }
+        return totalLoss / Double(pingEntries.count)
     }
 
     func averageLatency(ofType type: ProbeType) -> Double? {

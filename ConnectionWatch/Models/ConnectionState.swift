@@ -4,12 +4,14 @@ enum ConnectionState: String {
     case good
     case degraded
     case disconnected
+    case paused
 
     var color: Color {
         switch self {
         case .good: .green
         case .degraded: .yellow
         case .disconnected: .red
+        case .paused: .gray
         }
     }
 
@@ -18,6 +20,7 @@ enum ConnectionState: String {
         case .good: "Connected"
         case .degraded: "Degraded"
         case .disconnected: "Disconnected"
+        case .paused: "Paused"
         }
     }
 
@@ -26,6 +29,7 @@ enum ConnectionState: String {
         case .good: "Connection Restored"
         case .degraded: "Connection Degraded"
         case .disconnected: "Connection Lost"
+        case .paused: "Monitoring Paused"
         }
     }
 
@@ -34,6 +38,7 @@ enum ConnectionState: String {
         case .good: "Your internet connection is healthy."
         case .degraded: "Your internet connection has high latency."
         case .disconnected: "Your internet connection appears to be down."
+        case .paused: "Network monitoring is currently paused."
         }
     }
 }

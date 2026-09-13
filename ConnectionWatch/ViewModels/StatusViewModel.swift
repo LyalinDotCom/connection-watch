@@ -7,11 +7,21 @@ final class StatusViewModel {
     let monitor = ConnectionMonitorService()
 
     var currentState: ConnectionState { monitor.currentState }
+    var health: NetworkHealth { monitor.health }
     var history: PingHistory { monitor.history }
+    var isPaused: Bool { monitor.isPaused }
 
     var latestPingLatency: Double? { monitor.history.latestPing?.latency }
+    var latestJitter: Double? { monitor.history.latestJitter }
     var latestHTTPLatency: Double? { monitor.history.latestHTTP?.latency }
     var latestHTTPEndpoint: String? { monitor.history.latestHTTP?.endpoint }
+    var latestDownloadSpeedMbps: Double? { monitor.history.latestDownloadSpeedMbps }
+    var latestDownloadSpeedDate: Date? { monitor.history.latestSpeed?.timestamp }
+    var recentPacketLoss: Double { monitor.history.recentPacketLoss(window: 8) }
+
+    var interfaceName: String { monitor.interfaceName }
+    var isProbing: Bool { monitor.isProbing }
+    var isTestingSpeed: Bool { monitor.isTestingSpeed }
 
     var launchAtLogin: Bool {
         get { SMAppService.mainApp.status == .enabled }
@@ -70,5 +80,17 @@ final class StatusViewModel {
 
     func start() {
         monitor.start()
+    }
+
+    func togglePause() {
+        monitor.togglePause()
+    }
+
+    func refreshNow() {
+        monitor.refreshNow()
+    }
+
+    func runSpeedTestNow() {
+        monitor.runSpeedTestNow()
     }
 }

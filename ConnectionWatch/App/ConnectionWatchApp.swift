@@ -8,10 +8,14 @@ struct ConnectionWatchApp: App {
         MenuBarExtra {
             PopoverContentView(viewModel: viewModel)
         } label: {
-            StatusItemView(state: viewModel.currentState)
+            StatusItemView(
+                state: viewModel.currentState,
+                score: viewModel.health.score,
+                pingLatency: viewModel.latestPingLatency
+            )
         }
         .menuBarExtraStyle(.window)
-        .defaultSize(width: 320, height: 400)
+        .defaultSize(width: 360, height: 450)
         .onChange(of: viewModel.currentState) { }
     }
 
