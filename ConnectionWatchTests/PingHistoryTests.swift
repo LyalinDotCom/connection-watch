@@ -91,4 +91,44 @@ struct PingHistoryTests {
         #expect(history.isEmpty)
         #expect(history.count == 0)
     }
+
+    @Test func preservesSpeedEntryAcrossBufferEviction() {
+        var history = PingHistory(capacity: 4)
+        let speedResult = PingResult(
+            timestamp: Date(),
+            latency: 15.0,
+            downloadSpeedMbps: 250.5,
+            bytesTransferred: 10_000_000,
+            probeType: .speed
+        )
+        history.append(speedResult)
+
+        // Overflow ring buffer with regular ping/http probes
+        for i in 1...10 {
+            history.append(PingResult(timestamp: Date(), latency: Double(i), probeType: .ping))
+        }
+
+        #expect(history.count == 4)
+        #expect(history.latestSpeed?.downloadSpeedMbps == 250.5)
+        #expect(history.latestDownloadSpeedMbps == 250.5)
+    }
+
+    @Test func consecutiveHTTPFailuresClearICMPBlockedStatus() {
+        var history = PingHistory()
+        for _ in 0..<4 {
+            history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
+            history.append(PingResult(timestamp: Date(), latency: 40.0, probeType: .http))
+        }
+        #expect(history.isICMPLikelyBlocked == true)
+
+        // Single transient HTTP failure keeps isICMPLikelyBlocked true
+        history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
+        history.append(PingResult(timestamp: Date(), latency: nil, probeType: .http))
+        #expect(history.isICMPLikelyBlocked == true)
+
+        // Second consecutive HTTP failure indicates actual outage, clearing isICMPLikelyBlocked
+        history.append(PingResult(timestamp: Date(), latency: nil, packetLossPercent: 100.0, probeType: .ping))
+        history.append(PingResult(timestamp: Date(), latency: nil, probeType: .http))
+        #expect(history.isICMPLikelyBlocked == false)
+    }
 }

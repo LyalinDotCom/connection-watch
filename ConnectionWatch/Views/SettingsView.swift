@@ -9,19 +9,20 @@ struct SettingsView: View {
     @State private var draftGoodThreshold: Double = 150
     @State private var draftDegradedThreshold: Double = 600
     @State private var validationMessage: String?
+    @State private var copiedSkill = false
 
     private var appDisplayName: String {
         Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "Connection Watch"
     }
 
     private var appVersionString: String {
-        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3.2"
-        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "16"
+        let shortVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.4.1"
+        let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "19"
         return "v\(shortVersion) (build \(buildNumber))"
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             // Top Navigation Header Bar
             HStack(spacing: 8) {
                 Button {
@@ -53,7 +54,7 @@ struct SettingsView: View {
             }
 
             // General Settings Card
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("GENERAL")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
@@ -80,7 +81,7 @@ struct SettingsView: View {
                         .controlSize(.small)
                 }
             }
-            .padding(12)
+            .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color(nsColor: .controlBackgroundColor).opacity(0.65))
@@ -91,7 +92,7 @@ struct SettingsView: View {
             )
 
             // Network Probes & Thresholds Card
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("PROBES & THRESHOLDS")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(.secondary)
@@ -105,7 +106,7 @@ struct SettingsView: View {
                         .font(.system(size: 12, design: .monospaced))
                         .frame(width: 145)
                         .onSubmit {
-                            _ = commitSettings()
+                            handleApplyAndClose()
                         }
                 }
 
@@ -121,7 +122,7 @@ struct SettingsView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .frame(width: 56)
                             .onSubmit {
-                                _ = commitSettings()
+                                handleApplyAndClose()
                             }
                         Text("sec")
                             .font(.system(size: 11))
@@ -141,7 +142,7 @@ struct SettingsView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .frame(width: 56)
                             .onSubmit {
-                                _ = commitSettings()
+                                handleApplyAndClose()
                             }
                         Text("ms")
                             .font(.system(size: 11))
@@ -161,7 +162,7 @@ struct SettingsView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .frame(width: 56)
                             .onSubmit {
-                                _ = commitSettings()
+                                handleApplyAndClose()
                             }
                         Text("ms")
                             .font(.system(size: 11))
@@ -169,7 +170,66 @@ struct SettingsView: View {
                     }
                 }
             }
-            .padding(12)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.65))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+            )
+
+            // CLI & AI Agent Integration Card
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("CLI & AI AGENT (7-DAY TELEMETRY)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("SQLite WAL")
+                        .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1.5)
+                        .background(Color.primary.opacity(0.06))
+                        .clipShape(Capsule())
+                }
+
+                HStack(alignment: .center) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("connection-watch CLI & Skill")
+                            .font(.system(size: 12, weight: .medium))
+                        Text("Give AI agents access to 7-day ping, speed & SSID history")
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        viewModel.copyAgentSkill()
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.82)) {
+                            copiedSkill = true
+                        }
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .seconds(2.0))
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                copiedSkill = false
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: copiedSkill ? "checkmark.circle.fill" : "sparkles")
+                                .foregroundStyle(copiedSkill ? Color.green : Color.accentColor)
+                            Text(copiedSkill ? "Copied Skill!" : "Copy Agent Skill")
+                        }
+                    }
+                    .buttonStyle(ModernMacButtonStyle())
+                }
+            }
+            .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(Color(nsColor: .controlBackgroundColor).opacity(0.65))
@@ -204,10 +264,7 @@ struct SettingsView: View {
                 Spacer()
 
                 Button("Apply & Close") {
-                    let hadAdjustments = commitSettings()
-                    if !hadAdjustments {
-                        onClose()
-                    }
+                    handleApplyAndClose()
                 }
                 .buttonStyle(ModernMacButtonStyle(prominent: true))
                 .keyboardShortcut(.defaultAction)
@@ -219,6 +276,13 @@ struct SettingsView: View {
             draftGoodThreshold = viewModel.goodThreshold
             draftDegradedThreshold = viewModel.degradedThreshold
             validationMessage = nil
+        }
+    }
+
+    private func handleApplyAndClose() {
+        let hadAdjustments = commitSettings()
+        if !hadAdjustments {
+            onClose()
         }
     }
 

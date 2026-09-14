@@ -19,11 +19,4 @@ struct ConnectionWatchApp: App {
         .defaultSize(width: PopoverMetrics.width, height: PopoverMetrics.height)
         .onChange(of: viewModel.currentState) { }
     }
-
-    init() {
-        // Delay start slightly to let the app set up
-        DispatchQueue.main.async { [self] in
-            viewModel.start()
-        }
-    }
 }

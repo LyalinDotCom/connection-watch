@@ -29,9 +29,15 @@ final class NotificationService {
         deferredCheckTask = nil
     }
 
-    func notify(state: ConnectionState) {
+    func notify(state: ConnectionState, isEnabled: Bool = true) {
         guard state != .paused else {
             cancelPending()
+            return
+        }
+
+        guard isEnabled else {
+            cancelPending()
+            lastNotifiedState = state
             return
         }
 

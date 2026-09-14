@@ -107,7 +107,7 @@ struct LatencyChartView: View {
                                 endPoint: .bottom
                             )
                         )
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.monotone)
 
                         LineMark(
                             x: .value("Time", entry.timestamp),
@@ -116,7 +116,7 @@ struct LatencyChartView: View {
                         )
                         .foregroundStyle(.blue)
                         .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.monotone)
                     }
 
                     // Ping probes — cyan line & subtle area
@@ -133,7 +133,7 @@ struct LatencyChartView: View {
                                 endPoint: .bottom
                             )
                         )
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.monotone)
 
                         LineMark(
                             x: .value("Time", entry.timestamp),
@@ -142,7 +142,7 @@ struct LatencyChartView: View {
                         )
                         .foregroundStyle(.cyan)
                         .lineStyle(StrokeStyle(lineWidth: 1.75, lineCap: .round, lineJoin: .round))
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.monotone)
                     }
 
                 case .bars:
@@ -178,7 +178,7 @@ struct LatencyChartView: View {
                             yEnd: .value("Max", lat + jit)
                         )
                         .foregroundStyle(.teal.opacity(0.22))
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.monotone)
 
                         LineMark(
                             x: .value("Time", entry.timestamp),
@@ -187,7 +187,7 @@ struct LatencyChartView: View {
                         )
                         .foregroundStyle(.cyan)
                         .lineStyle(StrokeStyle(lineWidth: 1.5))
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.monotone)
 
                         PointMark(
                             x: .value("Time", entry.timestamp),
@@ -235,7 +235,12 @@ struct LatencyChartView: View {
                     RuleMark(x: .value("Hover", scrubbed.timestamp))
                         .foregroundStyle(Color.primary.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [2, 2]))
-                        .annotation(position: .top, alignment: .center, spacing: 4) {
+                        .annotation(
+                            position: .overlay,
+                            alignment: .top,
+                            spacing: 6,
+                            overflowResolution: .init(x: .fit(to: .plot), y: .fit(to: .plot))
+                        ) {
                             scrubTooltipView(summary: scrubbed)
                         }
                 }
@@ -344,10 +349,12 @@ struct LatencyChartView: View {
 
         // Match companion ping/http sharing the cycle timestamp (or closest within 2.5s)
         let windowEntries = nonSpeed.filter { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < 2.5 }
-        let pingEntry = windowEntries.min(by: { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < abs($1.timestamp.timeIntervalSince(nearest.timestamp)) && $0.probeType == .ping })
-            ?? windowEntries.first { $0.probeType == .ping }
-        let httpEntry = windowEntries.min(by: { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < abs($1.timestamp.timeIntervalSince(nearest.timestamp)) && $0.probeType == .http })
-            ?? windowEntries.first { $0.probeType == .http }
+        let pingEntry = windowEntries
+            .filter { $0.probeType == .ping }
+            .min(by: { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < abs($1.timestamp.timeIntervalSince(nearest.timestamp)) })
+        let httpEntry = windowEntries
+            .filter { $0.probeType == .http }
+            .min(by: { abs($0.timestamp.timeIntervalSince(nearest.timestamp)) < abs($1.timestamp.timeIntervalSince(nearest.timestamp)) })
 
         return ScrubSummary(
             timestamp: nearest.timestamp,

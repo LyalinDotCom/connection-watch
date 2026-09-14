@@ -296,4 +296,46 @@ struct NetworkHealthTests {
         #expect(summary?.packetLossPercent == 0.0)
         #expect(PingOutputParser.parseLatency(from: output) == 24.977)
     }
+
+    @Test func customLowGoodThresholdProducesDiagnosticReasonsAndNoCliff() {
+        let health = NetworkHealth.evaluate(
+            isConnected: true,
+            pingLatency: 20.0,
+            jitter: 2.0,
+            recentPacketLoss: 0.0,
+            httpLatency: 70.0,
+            downloadSpeedMbps: nil,
+            goodThreshold: 60.0,
+            degradedThreshold: 200.0,
+            isICMPBlocked: false
+        )
+
+        #expect(health.state == .degraded)
+        #expect(health.reasons.contains("Slow HTTP (70ms)"))
+    }
+
+    @Test func transientHttpFailureOnICMPBlockedNetworkDegradesInsteadOfDisconnecting() {
+        let health = NetworkHealth.evaluate(
+            isConnected: true,
+            pingLatency: nil,
+            jitter: nil,
+            recentPacketLoss: 20.0,
+            httpLatency: nil,
+            downloadSpeedMbps: nil,
+            goodThreshold: 150.0,
+            degradedThreshold: 600.0,
+            isICMPBlocked: true
+        )
+
+        #expect(health.state == .degraded)
+        #expect(health.score > 0)
+        #expect(health.reasons.contains("HTTP probe failed"))
+    }
+
+    @Test @MainActor func pingTargetSanitizationStripsURLsAndFlags() {
+        #expect(ConnectionMonitorService.sanitizePingTarget("https://1.1.1.1/dns-query") == "1.1.1.1")
+        #expect(ConnectionMonitorService.sanitizePingTarget("http://www.google.com/test") == "www.google.com")
+        #expect(ConnectionMonitorService.sanitizePingTarget("-f 8.8.8.8") == "f 8.8.8.8")
+        #expect(ConnectionMonitorService.sanitizePingTarget("   ") == "1.1.1.1")
+    }
 }

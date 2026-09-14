@@ -10,28 +10,33 @@ struct PingSummary: Sendable, Equatable {
 
 enum PingOutputParser {
     private static let singleTimePattern = /time=(\d+\.?\d*)\s*ms/
-    private static let summaryStatsPattern = /round-trip\s+min\/avg\/max\/stddev\s*=\s*(\d+\.?\d*)\/(\d+\.?\d*)\/(\d+\.?\d*)\/(\d+\.?\d*)\s*ms/
+    private static let summaryStatsPattern = /round-trip\s+min\/avg\/max\/stddev\s*=\s*(\d+\.?\d*|nan)\/(\d+\.?\d*|nan)\/(\d+\.?\d*|nan)\/(\d+\.?\d*|nan)\s*ms/
     private static let packetLossPattern = /(\d+\.?\d*)%\s+packet loss/
+
+    private static func parseFiniteDouble(_ str: Substring) -> Double? {
+        guard let val = Double(str), val.isFinite else { return nil }
+        return val
+    }
 
     static func parseLatency(from output: String) -> Double? {
         if let summary = parseSummary(from: output), let avg = summary.avgLatency {
             return avg
         }
         guard let match = output.firstMatch(of: singleTimePattern) else { return nil }
-        return Double(match.1)
+        return parseFiniteDouble(match.1)
     }
 
     static func parseSummary(from output: String) -> PingSummary? {
         var packetLoss: Double?
         if let lossMatch = output.firstMatch(of: packetLossPattern) {
-            packetLoss = Double(lossMatch.1)
+            packetLoss = parseFiniteDouble(lossMatch.1)
         }
 
         if let statsMatch = output.firstMatch(of: summaryStatsPattern) {
-            let minVal = Double(statsMatch.1)
-            let avgVal = Double(statsMatch.2)
-            let maxVal = Double(statsMatch.3)
-            let stddevVal = Double(statsMatch.4)
+            let minVal = parseFiniteDouble(statsMatch.1)
+            let avgVal = parseFiniteDouble(statsMatch.2)
+            let maxVal = parseFiniteDouble(statsMatch.3)
+            let stddevVal = parseFiniteDouble(statsMatch.4) ?? (avgVal != nil ? 0.0 : nil)
             return PingSummary(
                 minLatency: minVal,
                 avgLatency: avgVal,

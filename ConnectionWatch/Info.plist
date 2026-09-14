@@ -7,9 +7,11 @@
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleName</key>
-	<string>Connection Watch</string>
+	<string>$(INFOPLIST_KEY_CFBundleDisplayName)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Connection Watch</string>
+	<string>$(INFOPLIST_KEY_CFBundleDisplayName)</string>
+	<key>CFBundleIconName</key>
+	<string>$(ASSETCATALOG_COMPILER_APPICON_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -18,5 +20,9 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSLocationUsageDescription</key>
+	<string>Connection Watch uses location access solely to identify your current Wi-Fi network name (SSID) for network health logging and diagnostics.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Connection Watch uses location access solely to identify your current Wi-Fi network name (SSID) for network health logging and diagnostics.</string>
 </dict>
 </plist>

@@ -46,13 +46,15 @@ actor PingService {
 
         process.executableURL = URL(fileURLWithPath: "/sbin/ping")
         // Send rapid burst of `count` packets with 200ms spacing, `timeoutMs` per-packet timeout, and 3s hard timeout (-t 3)
-        process.arguments = ["-c", "\(count)", "-i", "0.2", "-W", "\(timeoutMs)", "-t", "3", target]
+        process.arguments = ["-c", "\(count)", "-i", "0.2", "-W", "\(timeoutMs)", "-t", "3", "--", target]
         process.standardOutput = pipe
         process.standardError = pipe
 
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
                 if Task.isCancelled {
+                    try? pipe.fileHandleForReading.close()
+                    try? pipe.fileHandleForWriting.close()
                     continuation.resume(throwing: CancellationError())
                     return
                 }
@@ -72,6 +74,8 @@ actor PingService {
                     }
                 } catch {
                     process.terminationHandler = nil
+                    try? pipe.fileHandleForReading.close()
+                    try? pipe.fileHandleForWriting.close()
                     continuation.resume(throwing: error)
                 }
             }

@@ -6,16 +6,39 @@ import ServiceManagement
 final class StatusViewModel {
     let monitor = ConnectionMonitorService()
 
+    init(autoStart: Bool = true) {
+        if autoStart {
+            Task { @MainActor [weak self] in
+                self?.start()
+            }
+        }
+    }
+
     var currentState: ConnectionState { monitor.currentState }
     var health: NetworkHealth { monitor.health }
     var history: PingHistory { monitor.history }
     var isPaused: Bool { monitor.isPaused }
 
-    var latestPingLatency: Double? { monitor.history.latestPing?.latency }
-    var latestJitter: Double? { monitor.history.latestJitter }
-    var latestHTTPLatency: Double? { monitor.history.latestHTTP?.latency }
+    var latestPingLatency: Double? {
+        guard currentState != .disconnected else { return nil }
+        return monitor.history.latestPing?.latency
+    }
+    var latestJitter: Double? {
+        guard currentState != .disconnected else { return nil }
+        return monitor.history.latestJitter
+    }
+    var latestHTTPLatency: Double? {
+        guard currentState != .disconnected else { return nil }
+        return monitor.history.latestHTTP?.latency
+    }
     var latestHTTPEndpoint: String? { monitor.history.latestHTTP?.endpoint }
     var latestDownloadSpeedMbps: Double? { monitor.history.latestDownloadSpeedMbps }
+    var latestSpeedTestFailed: Bool {
+        if let latest = monitor.history.latestSpeed {
+            return !latest.succeeded
+        }
+        return false
+    }
     var latestDownloadSpeedDate: Date? { monitor.history.latestSpeed?.timestamp }
     var latestSpeedBytesTransferred: Int? { monitor.history.latestSpeed?.bytesTransferred }
     var recentPacketLoss: Double { monitor.history.recentPacketLoss(window: 8) }
@@ -93,5 +116,17 @@ final class StatusViewModel {
 
     func runSpeedTestNow() {
         monitor.runSpeedTestNow()
+    }
+
+    func copyAgentSkill() {
+        CLIInstallerService.copyAgentSkillToClipboard()
+    }
+
+    var preferredCLIPath: String {
+        CLIInstallerService.preferredCLIPathForAgent
+    }
+
+    var telemetryDatabasePath: String {
+        TelemetryStore.databaseURL.path
     }
 }

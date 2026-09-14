@@ -25,9 +25,58 @@ It also won't cry wolf. Plenty of corporate, hotel, and VPN networks silently dr
 - Plain-language diagnostics — *"High jitter (±35ms)"*, *"ICMP filtered (using HTTP only)"*
 - Latency chart with avg / min / max and packet loss
 - On-demand download speed test
+- **7-day rolling SQLite telemetry** with Wi-Fi SSID & interface type tracking (`Wi-Fi`, `Personal Hotspot / Tether`, `Ethernet`, `VPN`)
+- **Companion CLI (`connection-watch`)** bundled inside the app with automatic `~/.local/bin/connection-watch` installation
+- **One-click "Copy AI Skill"** button to equip any AI coding/system agent with full instructions to analyze your 7-day network history
 - Notifications on state changes, rate limited so they don't nag
 - Configurable ping target, probe interval, and thresholds
 - Launch at login · Universal binary (Apple Silicon + Intel)
+
+## Companion CLI & AI Agent Telemetry (`connection-watch`)
+
+`Connection Watch.app` embeds a companion CLI executable at `Connection Watch.app/Contents/MacOS/connection-watch` and automatically links it into `~/.local/bin/connection-watch` (or `/usr/local/bin/connection-watch`) on launch.
+
+All network probes, speed test benchmarks, app start/stop events, interface handoffs, and Wi-Fi network names (SSIDs) are persisted in a rolling 7-day SQLite database at:
+
+```text
+~/Library/Application Support/ConnectionWatch/telemetry.sqlite
+~/Library/Application Support/ConnectionWatch/latest_status.json
+```
+
+### Asking an AI Agent to Analyze Your Network
+
+Click **"Copy AI Skill"** in the bottom bar of the menu bar popover (or in Settings) and paste it into your AI agent (Claude Code, Cursor, Gemini CLI, etc.). Your agent will immediately know where the CLI and SQLite database live and how to answer questions like:
+
+- *"Did my Wi-Fi drop or spike during my 2 PM meeting?"*
+- *"Compare my latency and packet loss on `HomeWiFi` vs `iPhone Hotspot` over the last 7 days."*
+- *"What time of day has the worst packet loss?"*
+
+### CLI Usage
+
+```sh
+# Live status, active interface/SSID, and database counts
+connection-watch status
+
+# 7-day analytical summary with P50/P95 latencies, uptime %, and per-SSID breakdown
+connection-watch summary --since 7d
+
+# List all degraded or disconnected incidents with diagnostic reasons (JSON supported)
+connection-watch outages --since 24h --json
+
+# Filter raw samples by latency spikes, packet loss, interface, or Wi-Fi SSID
+connection-watch samples --since 6h --min-latency 150
+connection-watch samples --since 24h --loss-only --ssid "HomeWiFi"
+
+# List all download speed benchmarks run in the last 7 days
+connection-watch speedtests --since 7d
+
+# Run any read-only SQL query directly against the 7-day SQLite database
+connection-watch sql "SELECT wifi_ssid, COUNT(*) AS probes, ROUND(AVG(ping_latency_ms),1) AS avg_ping_ms, ROUND(AVG(packet_loss_pct),2) AS avg_loss_pct FROM telemetry_samples GROUP BY wifi_ssid;"
+
+# Output the full AI Agent Skill Markdown or CLI help
+connection-watch skill
+connection-watch --help
+```
 
 ## Install
 

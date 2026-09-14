@@ -15,6 +15,7 @@ struct PopoverContentView: View {
     @State private var showSettings = false
     @State private var showSpeedTestConfirm = false
     @State private var isHoveringSpeedResult = false
+    @State private var copiedSkill = false
 
     var body: some View {
         ZStack {
@@ -74,6 +75,16 @@ struct PopoverContentView: View {
                             .padding(.vertical, 2)
                             .background(Color.primary.opacity(0.08))
                             .clipShape(Capsule())
+                        #if DEBUG
+                        Text("DEV")
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1.5)
+                            .background(Color.orange)
+                            .clipShape(Capsule())
+                            .help("Local Debug Build (com.connectionwatch.app.dev)")
+                        #endif
                     }
 
                     if viewModel.isPaused {
@@ -265,6 +276,27 @@ struct PopoverContentView: View {
                     .disabled(viewModel.isTestingSpeed || viewModel.isPaused)
                     .help("Run multi-stage download benchmark")
 
+                    Button {
+                        viewModel.copyAgentSkill()
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.82)) {
+                            copiedSkill = true
+                        }
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .seconds(2.0))
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                copiedSkill = false
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: copiedSkill ? "checkmark.circle.fill" : "sparkles")
+                                .foregroundStyle(copiedSkill ? Color.green : Color.accentColor)
+                            Text(copiedSkill ? "Copied Skill!" : "Copy AI Skill")
+                        }
+                    }
+                    .buttonStyle(ModernMacButtonStyle())
+                    .help("Copy AI Agent Skill markdown (CLI & 7-day SQLite telemetry guide) to clipboard")
+
                     Spacer()
 
                     Button {
@@ -366,14 +398,33 @@ struct PopoverContentView: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Circle()
-                    .fill(viewModel.latestDownloadSpeedMbps != nil ? Color.indigo : Color.secondary)
+                    .fill(
+                        viewModel.isTestingSpeed
+                            ? Color.indigo
+                            : (viewModel.latestSpeedTestFailed
+                                ? Color.red
+                                : (viewModel.latestDownloadSpeedMbps != nil ? Color.indigo : Color.secondary))
+                    )
                     .frame(width: 6, height: 6)
                 Text("SPEED")
                     .font(.system(size: 10, weight: .bold))
                     .foregroundStyle(.secondary)
             }
 
-            if let mbps = viewModel.latestDownloadSpeedMbps {
+            if viewModel.isTestingSpeed {
+                HStack(spacing: 4) {
+                    ProgressView()
+                        .controlSize(.small)
+                        .scaleEffect(0.65)
+                    Text("Testing...")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            } else if viewModel.latestSpeedTestFailed {
+                Text("Failed")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.red)
+            } else if let mbps = viewModel.latestDownloadSpeedMbps {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(String(format: "%.1f", mbps))
                         .font(.system(size: 16, weight: .bold, design: .rounded))
@@ -381,15 +432,6 @@ struct PopoverContentView: View {
                         .contentTransition(.numericText())
                     Text("Mbps")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-            } else if viewModel.isTestingSpeed {
-                HStack(spacing: 4) {
-                    ProgressView()
-                        .controlSize(.small)
-                        .scaleEffect(0.65)
-                    Text("Testing...")
-                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
             } else {
@@ -450,13 +492,17 @@ struct PopoverContentView: View {
     }
 
     private func relativeAgeString(from date: Date) -> String {
-        let elapsed = Int(Date().timeIntervalSince(date))
+        let elapsed = max(0, Int(Date().timeIntervalSince(date)))
         if elapsed < 5 {
             return "Just now"
         } else if elapsed < 60 {
             return "\(elapsed)s ago"
-        } else {
+        } else if elapsed < 3600 {
             return "\(elapsed / 60)m ago"
+        } else if elapsed < 86400 {
+            return "\(elapsed / 3600)h ago"
+        } else {
+            return "\(elapsed / 86400)d ago"
         }
     }
 

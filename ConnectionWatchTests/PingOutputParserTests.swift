@@ -40,4 +40,22 @@ struct PingOutputParserTests {
         let latency = PingOutputParser.parseLatency(from: "not a ping output at all")
         #expect(latency == nil)
     }
+
+    @Test func parsesSinglePacketNanStddevSummary() {
+        let output = """
+        PING 1.1.1.1 (1.1.1.1): 56 data bytes
+        64 bytes from 1.1.1.1: icmp_seq=0 ttl=52 time=20.732 ms
+        Request timeout for icmp_seq 1
+        Request timeout for icmp_seq 2
+
+        --- 1.1.1.1 ping statistics ---
+        3 packets transmitted, 1 packets received, 66.7% packet loss
+        round-trip min/avg/max/stddev = 20.732/20.732/20.732/nan ms
+        """
+        let summary = PingOutputParser.parseSummary(from: output)
+        #expect(summary != nil)
+        #expect(summary?.avgLatency == 20.732)
+        #expect(summary?.jitter == 0.0)
+        #expect(summary?.packetLossPercent == 66.7)
+    }
 }

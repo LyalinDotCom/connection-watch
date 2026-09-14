@@ -40,8 +40,8 @@ struct NetworkHealth: Sendable, Equatable {
         isICMPBlocked: Bool,
         previousState: ConnectionState = .good
     ) -> NetworkHealth {
-        // Offline check: link down OR both ping and HTTP failed
-        if !isConnected || (pingLatency == nil && httpLatency == nil) {
+        // Offline check: link down OR both ping and HTTP failed (unless ICMP is blocked and this is only a single transient HTTP failure)
+        if !isConnected || (pingLatency == nil && httpLatency == nil && !isICMPBlocked) {
             return NetworkHealth(
                 score: 0,
                 state: .disconnected,
@@ -49,24 +49,26 @@ struct NetworkHealth: Sendable, Equatable {
                 reasons: ["Connection unreachable"],
                 isInformationalNoteOnly: false,
                 isICMPBlocked: false,
-                pingLatency: pingLatency,
-                jitter: jitter,
-                httpLatency: httpLatency,
+                pingLatency: isConnected ? pingLatency : nil,
+                jitter: isConnected ? jitter : nil,
+                httpLatency: isConnected ? httpLatency : nil,
                 downloadSpeedMbps: downloadSpeedMbps,
-                recentPacketLoss: recentPacketLoss
+                recentPacketLoss: isConnected ? recentPacketLoss : 100.0
             )
         }
 
+        let effectiveLoss = (isICMPBlocked && recentPacketLoss >= 100.0) ? 0.0 : recentPacketLoss
         var reasons: [String] = []
         var informationalNote = false
 
         // 1. Ping Latency Score (0-100) — Weight: 35%
+        let idealPing = min(25.0, goodThreshold * 0.5)
         let pingScore: Double
         if let pingLatency {
-            if pingLatency <= 25 {
+            if pingLatency <= idealPing {
                 pingScore = 100
             } else if pingLatency <= goodThreshold {
-                let ratio = (pingLatency - 25) / max(1, goodThreshold - 25)
+                let ratio = (pingLatency - idealPing) / max(1, goodThreshold - idealPing)
                 pingScore = 100 - (ratio * 25)
             } else if pingLatency <= degradedThreshold {
                 let ratio = (pingLatency - goodThreshold) / max(1, degradedThreshold - goodThreshold)
@@ -85,10 +87,10 @@ struct NetworkHealth: Sendable, Equatable {
 
         // 2. Stability Score (Packet Loss & Jitter) (0-100) — Weight: 35%
         var stabilityScore: Double = 100
-        if !isICMPBlocked && recentPacketLoss > 0 {
-            stabilityScore -= min(85, recentPacketLoss * 2.5)
-            if recentPacketLoss >= 5 {
-                reasons.append(String(format: "Packet loss (%.0f%%)", recentPacketLoss))
+        if effectiveLoss > 0 {
+            stabilityScore -= min(85, effectiveLoss * 2.5)
+            if effectiveLoss >= 5 {
+                reasons.append(String(format: "Packet loss (%.0f%%)", effectiveLoss))
             }
         }
         if let jitter, jitter > 12 {
@@ -100,13 +102,14 @@ struct NetworkHealth: Sendable, Equatable {
         }
         stabilityScore = max(0, min(100, stabilityScore))
 
-        // 3. HTTP Latency Score (0-100) — Weight: 30% (100% if ICMP blocked)
+        // 3. HTTP Latency Score (0-100) — Weight: 30% (primary if ICMP blocked)
+        let idealHTTP = min(80.0, goodThreshold * 0.8)
         let httpScore: Double
         if let httpLatency {
-            if httpLatency <= 80 {
+            if httpLatency <= idealHTTP {
                 httpScore = 100
             } else if httpLatency <= goodThreshold {
-                let ratio = (httpLatency - 80) / max(1, goodThreshold - 80)
+                let ratio = (httpLatency - idealHTTP) / max(1, goodThreshold - idealHTTP)
                 httpScore = 100 - (ratio * 25)
             } else if httpLatency <= degradedThreshold {
                 let ratio = (httpLatency - goodThreshold) / max(1, degradedThreshold - goodThreshold)
@@ -125,7 +128,16 @@ struct NetworkHealth: Sendable, Equatable {
         // Weighted composite
         var rawScore: Double
         if isICMPBlocked {
-            rawScore = httpScore
+            if effectiveLoss > 0 {
+                rawScore = (httpScore * 0.70) + (stabilityScore * 0.30)
+            } else {
+                rawScore = httpScore
+            }
+            if httpLatency == nil || effectiveLoss >= 15 {
+                rawScore = min(rawScore, 58)
+            } else if (httpLatency ?? 0) > goodThreshold || effectiveLoss >= 5 {
+                rawScore = min(rawScore, 67)
+            }
             if reasons.isEmpty {
                 reasons.append("ICMP filtered (using HTTP only)")
                 informationalNote = true
@@ -136,9 +148,9 @@ struct NetworkHealth: Sendable, Equatable {
                 + (httpScore * 0.30)
 
             // Critical caps so severe issues always trigger Degraded state
-            if httpLatency == nil || recentPacketLoss >= 15 {
+            if httpLatency == nil || effectiveLoss >= 15 {
                 rawScore = min(rawScore, 58)
-            } else if pingLatency == nil || (pingLatency ?? 0) > goodThreshold || (httpLatency ?? 0) > goodThreshold || recentPacketLoss >= 5 {
+            } else if pingLatency == nil || (pingLatency ?? 0) > goodThreshold || (httpLatency ?? 0) > goodThreshold || effectiveLoss >= 5 {
                 rawScore = min(rawScore, 67)
             }
         }
@@ -163,8 +175,6 @@ struct NetworkHealth: Sendable, Equatable {
             state = .degraded
             ratingLabel = "Poor"
         }
-
-        let effectiveLoss = isICMPBlocked ? 0.0 : recentPacketLoss
 
         return NetworkHealth(
             score: finalScore,

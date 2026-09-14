@@ -3,6 +3,7 @@ import Foundation
 struct PingHistory: Sendable {
     private var buffer: [PingResult]
     private let capacity: Int
+    private var lastSpeedEntry: PingResult?
 
     init(capacity: Int = 240) {
         self.capacity = capacity
@@ -18,10 +19,15 @@ struct PingHistory: Sendable {
 
     var latestPing: PingResult? { buffer.last { $0.probeType == .ping } }
     var latestHTTP: PingResult? { buffer.last { $0.probeType == .http } }
-    var latestSpeed: PingResult? { buffer.last { $0.probeType == .speed } }
+    var latestSpeed: PingResult? {
+        buffer.last { $0.probeType == .speed } ?? lastSpeedEntry
+    }
 
     var latestDownloadSpeedMbps: Double? {
-        buffer.last { $0.probeType == .speed && $0.downloadSpeedMbps != nil }?.downloadSpeedMbps
+        if let latest = latestSpeed, latest.succeeded {
+            return latest.downloadSpeedMbps
+        }
+        return nil
     }
 
     var latestJitter: Double? {
@@ -29,11 +35,15 @@ struct PingHistory: Sendable {
     }
 
     /// Single source of truth for whether ICMP is filtered while HTTP connectivity works.
-    /// True if at least 3 recent ping probes in the window failed while at least one recent HTTP probe succeeded.
+    /// True if at least 3 recent ping probes in the window failed while at least one recent HTTP probe succeeded,
+    /// unless the last 2 consecutive HTTP probes failed (indicating an actual outage).
     var isICMPLikelyBlocked: Bool {
         let recentPings = buffer.filter { $0.probeType == .ping }.suffix(6)
         let recentHTTPs = buffer.filter { $0.probeType == .http }.suffix(6)
         guard recentPings.count >= 3, !recentHTTPs.isEmpty else { return false }
+        if recentHTTPs.count >= 2 && recentHTTPs.suffix(2).allSatisfy({ !$0.succeeded }) {
+            return false
+        }
         let allPingsFailed = recentPings.allSatisfy { !$0.succeeded }
         let anyHTTPSucceeded = recentHTTPs.contains { $0.succeeded }
         return allPingsFailed && anyHTTPSucceeded
@@ -129,6 +139,9 @@ struct PingHistory: Sendable {
     }
 
     mutating func append(_ result: PingResult) {
+        if result.probeType == .speed {
+            lastSpeedEntry = result
+        }
         if buffer.count >= capacity {
             buffer.removeFirst()
         }
@@ -137,5 +150,6 @@ struct PingHistory: Sendable {
 
     mutating func clear() {
         buffer.removeAll(keepingCapacity: true)
+        lastSpeedEntry = nil
     }
 }

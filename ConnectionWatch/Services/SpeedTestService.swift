@@ -25,7 +25,9 @@ actor SpeedTestService {
 
         // Stage 1 calibrates the link. If it fails there is nothing measured to report,
         // and nothing was transferred.
-        guard let calibration = await downloadProbe(urlString: Self.warmupPayloadURL) else {
+        guard !Task.isCancelled,
+              let calibration = await downloadProbe(urlString: Self.warmupPayloadURL),
+              !Task.isCancelled else {
             return PingResult(
                 timestamp: timestamp,
                 latency: nil,
@@ -50,7 +52,7 @@ actor SpeedTestService {
         var previousMbps = calibration.downloadSpeedMbps
         for stage in escalation {
             guard let mbps = previousMbps, mbps > stage.minimumMbps, !Task.isCancelled else { break }
-            guard let result = await downloadProbe(urlString: stage.url) else { break }
+            guard let result = await downloadProbe(urlString: stage.url), !Task.isCancelled else { break }
 
             totalBytes += result.bytesTransferred ?? 0
             if let measured = result.downloadSpeedMbps {
@@ -58,6 +60,17 @@ actor SpeedTestService {
             }
             bestLatency = result.latency ?? bestLatency
             previousMbps = result.downloadSpeedMbps
+        }
+
+        if Task.isCancelled {
+            return PingResult(
+                timestamp: timestamp,
+                latency: nil,
+                downloadSpeedMbps: nil,
+                bytesTransferred: nil,
+                endpoint: "speed.cloudflare.com",
+                probeType: .speed
+            )
         }
 
         return PingResult(
@@ -72,7 +85,7 @@ actor SpeedTestService {
 
     private func downloadProbe(urlString: String) async -> PingResult? {
         let timestamp = Date()
-        guard let url = URL(string: urlString) else { return nil }
+        guard !Task.isCancelled, let url = URL(string: urlString) else { return nil }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -85,6 +98,7 @@ actor SpeedTestService {
 
         do {
             let (data, response) = try await session.data(for: request, delegate: metricsDelegate)
+            guard !Task.isCancelled else { return nil }
             let metrics = metricsDelegate.collectedMetrics
             let wallElapsed = max(0.001, CFAbsoluteTimeGetCurrent() - start)
 
