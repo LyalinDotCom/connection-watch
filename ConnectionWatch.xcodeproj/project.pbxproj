@@ -47,6 +47,7 @@
 		A1002C00000000000000002C /* TelemetryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001C00000000000000001C /* TelemetryStore.swift */; };
 		A1002D00000000000000002D /* CLIInstallerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001D00000000000000001D /* CLIInstallerService.swift */; };
 		A1002E00000000000000002E /* TelemetryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001E00000000000000001E /* TelemetryStoreTests.swift */; };
+		A1002F00000000000000002F /* HTTPProbeServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2001F00000000000000001F /* HTTPProbeServiceTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +91,7 @@
 		A20013000000000000000013 /* ConnectionWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ConnectionWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20014000000000000000014 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20015000000000000000015 /* ConnectionWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ConnectionWatch.entitlements; sourceTree = "<group>"; };
+		A2001F00000000000000001F /* HTTPProbeServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPProbeServiceTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -205,6 +207,7 @@
 				A20011000000000000000011 /* PingHistoryTests.swift */,
 				A20019000000000000000019 /* NetworkHealthTests.swift */,
 				A2001E00000000000000001E /* TelemetryStoreTests.swift */,
+				A2001F00000000000000001F /* HTTPProbeServiceTests.swift */,
 			);
 			path = ConnectionWatchTests;
 			sourceTree = "<group>";
@@ -360,6 +363,7 @@
 				A10011000000000000000011 /* PingHistoryTests.swift in Sources */,
 				A10019000000000000000019 /* NetworkHealthTests.swift in Sources */,
 				A1002E00000000000000002E /* TelemetryStoreTests.swift in Sources */,
+				A1002F00000000000000002F /* HTTPProbeServiceTests.swift in Sources */,
 				A10020000000000000000020 /* PingOutputParser.swift in Sources */,
 				A1002B00000000000000002B /* NetworkUtilities.swift in Sources */,
 				A10021000000000000000021 /* PingHistory.swift in Sources */,
@@ -513,7 +517,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -527,7 +531,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.dev;
 				PRODUCT_NAME = "Connection Watch Dev";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -544,7 +548,7 @@
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -558,7 +562,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app;
 				PRODUCT_NAME = "Connection Watch";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -572,11 +576,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -590,11 +594,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CODE_SIGNING_REQUIRED = NO;
-				CURRENT_PROJECT_VERSION = 19;
+				CURRENT_PROJECT_VERSION = 20;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.4.1;
+				MARKETING_VERSION = 1.4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.connectionwatch.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;

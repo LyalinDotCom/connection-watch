@@ -314,7 +314,7 @@ struct NetworkHealthTests {
         #expect(health.reasons.contains("Slow HTTP (70ms)"))
     }
 
-    @Test func transientHttpFailureOnICMPBlockedNetworkDegradesInsteadOfDisconnecting() {
+    @Test func failedHttpCycleOnICMPBlockedNetworkIsOffline() {
         let health = NetworkHealth.evaluate(
             isConnected: true,
             pingLatency: nil,
@@ -327,9 +327,64 @@ struct NetworkHealthTests {
             isICMPBlocked: true
         )
 
+        #expect(health.state == .disconnected)
+        #expect(health.score == 0)
+        #expect(health.reasons.contains("HTTP checks failed; internet unavailable"))
+    }
+
+    @Test(arguments: [ConnectionState.good, .degraded, .disconnected])
+    func fastPingCannotOverrideFailedHTTP(previousState: ConnectionState) {
+        let health = NetworkHealth.evaluate(
+            isConnected: true,
+            pingLatency: 5,
+            jitter: 1,
+            recentPacketLoss: 0,
+            httpLatency: nil,
+            downloadSpeedMbps: 500,
+            goodThreshold: 150,
+            degradedThreshold: 600,
+            isICMPBlocked: false,
+            previousState: previousState
+        )
+
+        #expect(health.state == .disconnected)
+        #expect(health.score == 0)
+        #expect(health.ratingLabel == "Offline")
+        #expect(health.pingLatency == 5) // Preserve the diagnostic contrast in the popover/CLI.
+        #expect(health.reasons == ["HTTP checks failed; ping still responds"])
+    }
+
+    @Test func fastPingCannotHideSlowHTTP() {
+        let health = NetworkHealth.evaluate(
+            isConnected: true, pingLatency: 5, jitter: 1, recentPacketLoss: 0,
+            httpLatency: 1500, downloadSpeedMbps: nil,
+            goodThreshold: 150, degradedThreshold: 600, isICMPBlocked: false
+        )
         #expect(health.state == .degraded)
-        #expect(health.score > 0)
-        #expect(health.reasons.contains("HTTP probe failed"))
+        #expect(health.reasons.contains("Very slow HTTP (1500ms)"))
+    }
+
+    @Test func intermittentHTTPRecoversOnlyAfterCleanWindowEvenWithPerfectPing() {
+        var history = PingHistory()
+        var previousState = ConnectionState.good
+        let httpLatencies: [Double?] = [40, nil] + Array(repeating: 40, count: 8)
+
+        for (index, latency) in httpLatencies.enumerated() {
+            history.append(PingResult(timestamp: Date(), latency: 5, packetLossPercent: 0, probeType: .ping))
+            history.append(PingResult(timestamp: Date(), latency: latency, probeType: .http))
+            let health = NetworkHealth.evaluate(
+                isConnected: true, pingLatency: history.latestPing?.latency,
+                jitter: 1, recentPacketLoss: history.recentPacketLoss(),
+                httpLatency: history.latestHTTP?.latency, downloadSpeedMbps: nil,
+                goodThreshold: 150, degradedThreshold: 600, isICMPBlocked: history.isICMPLikelyBlocked,
+                recentHTTPFailureRate: history.recentHTTPFailureRate(), previousState: previousState
+            )
+            let expected: ConnectionState = index == 1 ? .disconnected :
+                ((2...8).contains(index) ? .degraded : .good)
+            #expect(health.state == expected)
+            #expect(history.recentPacketLoss() == 0)
+            previousState = health.state
+        }
     }
 
     @Test @MainActor func pingTargetSanitizationStripsURLsAndFlags() {

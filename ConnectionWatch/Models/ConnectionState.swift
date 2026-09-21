@@ -36,7 +36,7 @@ enum ConnectionState: String {
     var notificationBody: String {
         switch self {
         case .good: "Your internet connection is healthy."
-        case .degraded: "Your internet connection has high latency."
+        case .degraded: "Your internet connection is slow or unreliable."
         case .disconnected: "Your internet connection appears to be down."
         case .paused: "Network monitoring is currently paused."
         }

@@ -20,16 +20,13 @@ final class StatusViewModel {
     var isPaused: Bool { monitor.isPaused }
 
     var latestPingLatency: Double? {
-        guard currentState != .disconnected else { return nil }
-        return monitor.history.latestPing?.latency
+        monitor.health.pingLatency
     }
     var latestJitter: Double? {
-        guard currentState != .disconnected else { return nil }
-        return monitor.history.latestJitter
+        monitor.health.jitter
     }
     var latestHTTPLatency: Double? {
-        guard currentState != .disconnected else { return nil }
-        return monitor.history.latestHTTP?.latency
+        monitor.health.httpLatency
     }
     var latestHTTPEndpoint: String? { monitor.history.latestHTTP?.endpoint }
     var latestDownloadSpeedMbps: Double? { monitor.history.latestDownloadSpeedMbps }

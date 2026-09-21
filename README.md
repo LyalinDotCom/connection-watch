@@ -10,13 +10,16 @@ A macOS menu bar app that tells you whether your internet is actually working �
 
 | Symptom | Likely cause |
 | --- | --- |
-| Ping fine, HTTP slow | DNS or the far end |
+| Ping fine, every HTTP endpoint fails | Web access unavailable even though ping is reachable — red / Offline |
+| Ping fine, HTTP slow or intermittently failing | Web access is slow or unreliable — yellow / Degraded |
 | Both spiking together | Your local link |
 | High jitter, no loss | Congested Wi-Fi |
 
 It's quiet by design — background monitoring is one ping burst and one HTTP `HEAD` request every 10 seconds. The download speed test only runs when you press the button, because a monitor that saturates your connection to measure it is mostly measuring itself.
 
 It also won't cry wolf. Plenty of corporate, hotel, and VPN networks silently drop ICMP. Connection Watch notices and scores on HTTP alone instead of parking a red light on a perfectly good connection.
+
+HTTP is the availability check: if the primary endpoint fails, the app tries independent fallback endpoints before reporting Offline. A successful ping cannot override that result. HTTP timing includes connection setup and fallback attempts; recent HTTP failures keep the status Degraded during recovery. The menu bar shows **Offline** or **Degraded** when there is a problem, with separate ping and HTTP readings in the popover. These probes estimate general internet access; they cannot guarantee that every site or application is reachable.
 
 ## Features
 

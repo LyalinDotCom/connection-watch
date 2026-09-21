@@ -383,6 +383,7 @@ final class ConnectionMonitorService {
             goodThreshold: goodThreshold,
             degradedThreshold: degradedThreshold,
             isICMPBlocked: icmpBlocked,
+            recentHTTPFailureRate: history.recentHTTPFailureRate(window: 8),
             previousState: prevState
         )
 
@@ -476,11 +477,11 @@ final class ConnectionMonitorService {
             wifiSSID: networkMonitor.wifiSSID,
             isExpensive: networkMonitor.isExpensive,
             isConstrained: networkMonitor.isConstrained,
-            pingLatencyMs: currentState == .disconnected ? nil : history.latestPing?.latency,
-            jitterMs: currentState == .disconnected ? nil : history.latestPing?.jitter,
+            pingLatencyMs: health.pingLatency,
+            jitterMs: health.jitter,
             packetLossPct: health.recentPacketLoss,
             pingTarget: pingTarget,
-            httpLatencyMs: currentState == .disconnected ? nil : history.latestHTTP?.latency,
+            httpLatencyMs: health.httpLatency,
             httpEndpoint: history.latestHTTP?.endpoint,
             latestDownloadSpeedMbps: history.latestDownloadSpeedMbps,
             latestSpeedTestDate: history.latestSpeed.map { TelemetryStore.formatISO($0.timestamp) },

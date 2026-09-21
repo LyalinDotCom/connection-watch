@@ -844,7 +844,9 @@ public enum AgentSkillGenerator {
 
         ## Overview & Parent Application
         `connection-watch` is the companion CLI utility for **Connection Watch.app**, a native macOS menu bar network health monitor.
-        Connection Watch continuously monitors internet quality in the background using lightweight ICMP ping bursts, HTTP TTFB probes, network interface handoff listeners, and on-demand multi-stage Cloudflare download speed benchmarks. All telemetry is persisted locally for a rolling **7-day window** in a WAL-mode SQLite database.
+        Connection Watch continuously monitors internet quality in the background using lightweight ICMP ping bursts, HTTP connectivity probes, network interface handoff listeners, and on-demand multi-stage Cloudflare download speed benchmarks. All telemetry is persisted locally for a rolling **7-day window** in a WAL-mode SQLite database.
+
+        Since v1.4.2, HTTP latency includes DNS lookup, connection setup, and fallback attempts. Older retained samples may contain response-only timings, so comparisons across this upgrade need that context.
 
         Use this tool whenever the user asks you to:
         - Diagnose recent internet drops, lag spikes, packet loss, or high jitter (e.g., *"Why did my call lag 10 minutes ago?"* or *"How many outages did I have today?"*)

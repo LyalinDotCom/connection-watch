@@ -124,12 +124,17 @@ struct PingHistory: Sendable {
     /// If ICMP is blocked (all pings fail while HTTP succeeds), falls back to HTTP probe failure rate.
     func recentPacketLoss(window: Int = 8) -> Double {
         if isICMPLikelyBlocked {
-            let httpEntries = buffer.filter { $0.probeType == .http }.suffix(window)
-            guard !httpEntries.isEmpty else { return 0 }
-            let failedHTTP = httpEntries.filter { !$0.succeeded }.count
-            return Double(failedHTTP) / Double(httpEntries.count) * 100.0
+            return recentHTTPFailureRate(window: window)
         }
         return rawRecentPingPacketLoss(window: window)
+    }
+
+    /// HTTP availability is independent of whether ICMP happens to be working.
+    func recentHTTPFailureRate(window: Int = 8) -> Double {
+        guard window > 0 else { return 0 }
+        let entries = buffer.filter { $0.probeType == .http }.suffix(window)
+        guard !entries.isEmpty else { return 0 }
+        return Double(entries.filter { !$0.succeeded }.count) / Double(entries.count) * 100
     }
 
     func averageLatency(ofType type: ProbeType) -> Double? {

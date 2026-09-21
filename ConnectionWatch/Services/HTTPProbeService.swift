@@ -8,10 +8,13 @@ actor HTTPProbeService {
         "https://www.google.com/generate_204",
         "https://cp.cloudflare.com/generate_204",
         "https://www.apple.com/library/test/success.html",
-        "https://www.cloudflare.com/cdn-cgi/trace",
     ]
 
-    init() {
+    init(session: URLSession? = nil) {
+        if let session {
+            self.session = session
+            return
+        }
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 3.0
         config.timeoutIntervalForResource = 3.0
@@ -20,6 +23,7 @@ actor HTTPProbeService {
     }
 
     func probe(endpoints: [String] = defaultEndpoints, timestamp: Date = Date()) async -> PingResult {
+        let start = ProcessInfo.processInfo.systemUptime
         let list = endpoints.isEmpty ? Self.defaultEndpoints : endpoints
         let primaryIndex = preferredIndex % list.count
         let primaryEndpoint = list[primaryIndex]
@@ -28,8 +32,18 @@ actor HTTPProbeService {
             return PingResult(timestamp: timestamp, latency: nil, endpoint: primaryEndpoint, probeType: .http)
         }
 
-        if let result = await performSingleProbe(endpoint: primaryEndpoint, timeout: 3.0, timestamp: timestamp), result.succeeded {
-            return result
+        // Include DNS, connection setup, and all failed attempts in the user-visible wait.
+        func success(endpoint: String) -> PingResult {
+            PingResult(
+                timestamp: timestamp,
+                latency: (ProcessInfo.processInfo.systemUptime - start) * 1000,
+                endpoint: endpoint,
+                probeType: .http
+            )
+        }
+
+        if await performSingleProbe(endpoint: primaryEndpoint, timeout: 3.0) {
+            return success(endpoint: primaryEndpoint)
         }
 
         // Fallback to distinct endpoints on failure and update preferredIndex to the working endpoint
@@ -38,9 +52,9 @@ actor HTTPProbeService {
                 guard !Task.isCancelled else { break }
                 let candidateIndex = (primaryIndex + offset) % list.count
                 let fallbackEndpoint = list[candidateIndex]
-                if let fallbackResult = await performSingleProbe(endpoint: fallbackEndpoint, timeout: 2.0, timestamp: timestamp), fallbackResult.succeeded {
+                if await performSingleProbe(endpoint: fallbackEndpoint, timeout: 2.0) {
                     preferredIndex = candidateIndex
-                    return fallbackResult
+                    return success(endpoint: fallbackEndpoint)
                 }
             }
         }
@@ -48,29 +62,23 @@ actor HTTPProbeService {
         return PingResult(timestamp: timestamp, latency: nil, endpoint: primaryEndpoint, probeType: .http)
     }
 
-    private func performSingleProbe(endpoint: String, timeout: TimeInterval, timestamp: Date) async -> PingResult? {
-        guard !Task.isCancelled else { return nil }
-        let (headResult, shouldRetryWithGET) = await performRequest(endpoint: endpoint, method: "HEAD", timeout: timeout, timestamp: timestamp)
-        if headResult.succeeded {
-            return headResult
-        }
-        guard shouldRetryWithGET, !Task.isCancelled else {
-            return headResult
-        }
-        // Fallback once to GET only when server/proxy responded with an HTTP error status rejecting HEAD
-        let (getResult, _) = await performRequest(endpoint: endpoint, method: "GET", timeout: timeout, timestamp: timestamp)
-        return getResult
+    private func performSingleProbe(endpoint: String, timeout: TimeInterval) async -> Bool {
+        guard !Task.isCancelled else { return false }
+        let (succeeded, shouldRetryWithGET) = await performRequest(endpoint: endpoint, method: "HEAD", timeout: timeout)
+        if succeeded { return true }
+        guard shouldRetryWithGET, !Task.isCancelled else { return false }
+        // Retry only when HEAD is unsupported, not on every server or proxy failure.
+        let (getSucceeded, _) = await performRequest(endpoint: endpoint, method: "GET", timeout: timeout)
+        return getSucceeded
     }
 
     private func performRequest(
         endpoint: String,
         method: String,
-        timeout: TimeInterval,
-        timestamp: Date
-    ) async -> (result: PingResult, shouldRetryWithGET: Bool) {
-        let failed = PingResult(timestamp: timestamp, latency: nil, endpoint: endpoint, probeType: .http)
+        timeout: TimeInterval
+    ) async -> (succeeded: Bool, shouldRetryWithGET: Bool) {
         guard !Task.isCancelled, let url = URL(string: endpoint) else {
-            return (failed, false)
+            return (false, false)
         }
 
         var request = URLRequest(url: url)
@@ -79,38 +87,22 @@ actor HTTPProbeService {
         request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.timeoutInterval = timeout
 
-        let metricsDelegate = URLSessionMetricsDelegate()
-        let start = CFAbsoluteTimeGetCurrent()
-
         do {
-            let (_, response) = try await session.data(for: request, delegate: metricsDelegate)
-            let metrics = metricsDelegate.collectedMetrics
-            let wallElapsedMs = (CFAbsoluteTimeGetCurrent() - start) * 1000
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                return (failed, false)
+            let (_, response) = try await session.data(for: request)
+            guard !Task.isCancelled, let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.url == url else {
+                // A redirected sign-in page is not a successful connectivity check.
+                return (false, false)
             }
-
-            guard (200...399).contains(httpResponse.statusCode) else {
-                // Server responded with HTTP error (e.g. 405 Method Not Allowed) — retry with GET if this was HEAD
-                return (failed, method == "HEAD")
+            guard (200...299).contains(httpResponse.statusCode) else {
+                return (false, method == "HEAD" && [405, 501].contains(httpResponse.statusCode))
             }
-
-            // Prefer exact TTFB (responseStartDate - requestStartDate) from URLSessionTaskMetrics if available
-            var finalLatency = wallElapsedMs
-            if let metrics,
-               let transaction = metrics.transactionMetrics.last,
-               let reqStart = transaction.requestStartDate,
-               let respStart = transaction.responseStartDate {
-                let ttfbMs = respStart.timeIntervalSince(reqStart) * 1000
-                if ttfbMs > 0.5 && ttfbMs <= wallElapsedMs && ttfbMs.isFinite {
-                    finalLatency = ttfbMs
-                }
+            if url.lastPathComponent == "generate_204", httpResponse.statusCode != 204 {
+                return (false, false)
             }
-
-            return (PingResult(timestamp: timestamp, latency: finalLatency, endpoint: endpoint, probeType: .http), false)
+            return (true, false)
         } catch {
-            return (failed, false)
+            return (false, false)
         }
     }
 }

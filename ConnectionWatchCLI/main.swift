@@ -139,7 +139,7 @@ func printHelp() {
       (the macOS menu bar network health monitor).
 
       Why this utility exists:
-      Connection Watch.app continuously captures passive ICMP ping bursts, HTTP TTFB probes,
+      Connection Watch.app continuously captures passive ICMP ping bursts, HTTP connectivity probes,
       network interface transitions (Wi-Fi, Personal Hotspot / Tether, Ethernet, VPN), Wi-Fi SSID
       names, app start/stop lifecycle events, and on-demand Cloudflare download speed benchmarks.
       All telemetry is stored locally in a rolling 7-day SQLite database so developers, power users,
@@ -541,7 +541,7 @@ func runSchemaCommand() {
        jitter_ms           REAL                   -- Ping burst stddev in ms
        packet_loss_pct     REAL                   -- 0.0 to 100.0 packet loss percentage
        ping_target         TEXT                   -- e.g. '1.1.1.1'
-       http_latency_ms     REAL                   -- HTTP TTFB latency in ms
+       http_latency_ms     REAL                   -- HTTP check duration in ms (includes setup/fallbacks since v1.4.2)
        http_endpoint       TEXT                   -- e.g. 'https://www.google.com/generate_204'
        download_speed_mbps REAL                   -- Download throughput in Mbps (speed tests)
        bytes_transferred   INTEGER                -- Bytes downloaded during speed test

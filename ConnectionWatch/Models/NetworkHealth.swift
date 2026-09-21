@@ -38,15 +38,19 @@ struct NetworkHealth: Sendable, Equatable {
         goodThreshold: Double,
         degradedThreshold: Double,
         isICMPBlocked: Bool,
+        recentHTTPFailureRate: Double = 0,
         previousState: ConnectionState = .good
     ) -> NetworkHealth {
-        // Offline check: link down OR both ping and HTTP failed (unless ICMP is blocked and this is only a single transient HTTP failure)
-        if !isConnected || (pingLatency == nil && httpLatency == nil && !isICMPBlocked) {
+        // HTTPProbeService has already tried independent endpoints before reporting failure.
+        // Ping reachability (or historical ICMP filtering) cannot prove usable internet access.
+        guard isConnected, let httpLatency else {
+            let reason = !isConnected ? "Network link unavailable" :
+                (pingLatency != nil ? "HTTP checks failed; ping still responds" : "HTTP checks failed; internet unavailable")
             return NetworkHealth(
                 score: 0,
                 state: .disconnected,
                 ratingLabel: "Offline",
-                reasons: ["Connection unreachable"],
+                reasons: [reason],
                 isInformationalNoteOnly: false,
                 isICMPBlocked: false,
                 pingLatency: isConnected ? pingLatency : nil,
@@ -60,6 +64,9 @@ struct NetworkHealth: Sendable, Equatable {
         let effectiveLoss = (isICMPBlocked && recentPacketLoss >= 100.0) ? 0.0 : recentPacketLoss
         var reasons: [String] = []
         var informationalNote = false
+        if recentHTTPFailureRate > 0 {
+            reasons.append(String(format: "Recent HTTP failures (%.0f%%)", recentHTTPFailureRate))
+        }
 
         // 1. Ping Latency Score (0-100) — Weight: 35%
         let idealPing = min(25.0, goodThreshold * 0.5)
@@ -105,24 +112,19 @@ struct NetworkHealth: Sendable, Equatable {
         // 3. HTTP Latency Score (0-100) — Weight: 30% (primary if ICMP blocked)
         let idealHTTP = min(80.0, goodThreshold * 0.8)
         let httpScore: Double
-        if let httpLatency {
-            if httpLatency <= idealHTTP {
-                httpScore = 100
-            } else if httpLatency <= goodThreshold {
-                let ratio = (httpLatency - idealHTTP) / max(1, goodThreshold - idealHTTP)
-                httpScore = 100 - (ratio * 25)
-            } else if httpLatency <= degradedThreshold {
-                let ratio = (httpLatency - goodThreshold) / max(1, degradedThreshold - goodThreshold)
-                httpScore = 75 - (ratio * 50)
-                reasons.append(String(format: "Slow HTTP (%.0fms)", httpLatency))
-            } else {
-                // Continuous ramp above degradedThreshold instead of a flat 15 cliff
-                httpScore = max(5, 25 - (httpLatency - degradedThreshold) / 100)
-                reasons.append(String(format: "Very slow HTTP (%.0fms)", httpLatency))
-            }
+        if httpLatency <= idealHTTP {
+            httpScore = 100
+        } else if httpLatency <= goodThreshold {
+            let ratio = (httpLatency - idealHTTP) / max(1, goodThreshold - idealHTTP)
+            httpScore = 100 - (ratio * 25)
+        } else if httpLatency <= degradedThreshold {
+            let ratio = (httpLatency - goodThreshold) / max(1, degradedThreshold - goodThreshold)
+            httpScore = 75 - (ratio * 50)
+            reasons.append(String(format: "Slow HTTP (%.0fms)", httpLatency))
         } else {
-            httpScore = 25
-            reasons.append("HTTP probe failed")
+            // Continuous ramp above degradedThreshold instead of a flat 15 cliff
+            httpScore = max(5, 25 - (httpLatency - degradedThreshold) / 100)
+            reasons.append(String(format: "Very slow HTTP (%.0fms)", httpLatency))
         }
 
         // Weighted composite
@@ -133,9 +135,9 @@ struct NetworkHealth: Sendable, Equatable {
             } else {
                 rawScore = httpScore
             }
-            if httpLatency == nil || effectiveLoss >= 15 {
+            if effectiveLoss >= 15 || recentHTTPFailureRate >= 25 {
                 rawScore = min(rawScore, 58)
-            } else if (httpLatency ?? 0) > goodThreshold || effectiveLoss >= 5 {
+            } else if httpLatency > goodThreshold || effectiveLoss >= 5 || recentHTTPFailureRate > 0 {
                 rawScore = min(rawScore, 67)
             }
             if reasons.isEmpty {
@@ -148,9 +150,9 @@ struct NetworkHealth: Sendable, Equatable {
                 + (httpScore * 0.30)
 
             // Critical caps so severe issues always trigger Degraded state
-            if httpLatency == nil || effectiveLoss >= 15 {
+            if effectiveLoss >= 15 || recentHTTPFailureRate >= 25 {
                 rawScore = min(rawScore, 58)
-            } else if pingLatency == nil || (pingLatency ?? 0) > goodThreshold || (httpLatency ?? 0) > goodThreshold || effectiveLoss >= 5 {
+            } else if pingLatency == nil || (pingLatency ?? 0) > goodThreshold || httpLatency > goodThreshold || effectiveLoss >= 5 || recentHTTPFailureRate > 0 {
                 rawScore = min(rawScore, 67)
             }
         }

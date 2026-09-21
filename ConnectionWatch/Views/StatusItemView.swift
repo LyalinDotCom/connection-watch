@@ -15,6 +15,9 @@ struct StatusItemView: View {
             } else if state == .disconnected {
                 Text("Offline")
                     .font(.system(size: 11, weight: .medium))
+            } else if state == .degraded {
+                Text("Degraded")
+                    .font(.system(size: 11, weight: .medium))
             } else if let pingLatency {
                 Text(String(format: "%.0fms", pingLatency))
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
