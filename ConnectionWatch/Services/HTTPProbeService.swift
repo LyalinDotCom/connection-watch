@@ -1,7 +1,8 @@
 import Foundation
 
 actor HTTPProbeService {
-    private let session: URLSession
+    /// Set only by tests. Production probes build a new session for every probe (see `makeColdSession`).
+    private let injectedSession: URLSession?
     private var preferredIndex = 0
 
     static let defaultEndpoints = [
@@ -11,18 +12,30 @@ actor HTTPProbeService {
     ]
 
     init(session: URLSession? = nil) {
-        if let session {
-            self.session = session
-            return
-        }
+        self.injectedSession = session
+    }
+
+    /// A session with an empty connection pool. A long-lived session keeps its connection open between
+    /// probes, which turns the request into a single round trip that skips connection setup and TLS.
+    /// A new session makes each probe open a connection the way a newly launched app would.
+    /// DNS is still answered from the system cache until the record's TTL expires.
+    static func makeColdSession() -> URLSession {
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForRequest = 3.0
         config.timeoutIntervalForResource = 3.0
         config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
-        self.session = URLSession(configuration: config)
+        config.urlCache = nil
+        return URLSession(configuration: config)
     }
 
     func probe(endpoints: [String] = defaultEndpoints, timestamp: Date = Date()) async -> PingResult {
+        let session = injectedSession ?? Self.makeColdSession()
+        defer {
+            // Drop the connection so the next probe cannot reuse it. An injected session belongs to the caller.
+            if injectedSession == nil {
+                session.invalidateAndCancel()
+            }
+        }
         let start = ProcessInfo.processInfo.systemUptime
         let list = endpoints.isEmpty ? Self.defaultEndpoints : endpoints
         let primaryIndex = preferredIndex % list.count
@@ -32,7 +45,7 @@ actor HTTPProbeService {
             return PingResult(timestamp: timestamp, latency: nil, endpoint: primaryEndpoint, probeType: .http)
         }
 
-        // Include DNS, connection setup, and all failed attempts in the user-visible wait.
+        // The wait a user would see: connection setup, TLS, the request, and every failed attempt before it.
         func success(endpoint: String) -> PingResult {
             PingResult(
                 timestamp: timestamp,
@@ -42,7 +55,7 @@ actor HTTPProbeService {
             )
         }
 
-        if await performSingleProbe(endpoint: primaryEndpoint, timeout: 3.0) {
+        if await performSingleProbe(session: session, endpoint: primaryEndpoint, timeout: 3.0) {
             return success(endpoint: primaryEndpoint)
         }
 
@@ -52,7 +65,7 @@ actor HTTPProbeService {
                 guard !Task.isCancelled else { break }
                 let candidateIndex = (primaryIndex + offset) % list.count
                 let fallbackEndpoint = list[candidateIndex]
-                if await performSingleProbe(endpoint: fallbackEndpoint, timeout: 2.0) {
+                if await performSingleProbe(session: session, endpoint: fallbackEndpoint, timeout: 2.0) {
                     preferredIndex = candidateIndex
                     return success(endpoint: fallbackEndpoint)
                 }
@@ -62,17 +75,18 @@ actor HTTPProbeService {
         return PingResult(timestamp: timestamp, latency: nil, endpoint: primaryEndpoint, probeType: .http)
     }
 
-    private func performSingleProbe(endpoint: String, timeout: TimeInterval) async -> Bool {
+    private func performSingleProbe(session: URLSession, endpoint: String, timeout: TimeInterval) async -> Bool {
         guard !Task.isCancelled else { return false }
-        let (succeeded, shouldRetryWithGET) = await performRequest(endpoint: endpoint, method: "HEAD", timeout: timeout)
+        let (succeeded, shouldRetryWithGET) = await performRequest(session: session, endpoint: endpoint, method: "HEAD", timeout: timeout)
         if succeeded { return true }
         guard shouldRetryWithGET, !Task.isCancelled else { return false }
         // Retry only when HEAD is unsupported, not on every server or proxy failure.
-        let (getSucceeded, _) = await performRequest(endpoint: endpoint, method: "GET", timeout: timeout)
+        let (getSucceeded, _) = await performRequest(session: session, endpoint: endpoint, method: "GET", timeout: timeout)
         return getSucceeded
     }
 
     private func performRequest(
+        session: URLSession,
         endpoint: String,
         method: String,
         timeout: TimeInterval

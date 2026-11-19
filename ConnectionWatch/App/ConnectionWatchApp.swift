@@ -12,7 +12,8 @@ struct ConnectionWatchApp: App {
                 state: viewModel.currentState,
                 score: viewModel.health.score,
                 pingLatency: viewModel.latestPingLatency,
-                httpLatency: viewModel.latestHTTPLatency
+                httpLatency: viewModel.latestHTTPLatency,
+                isRecovering: viewModel.health.isRecovering
             )
         }
         .menuBarExtraStyle(.window)

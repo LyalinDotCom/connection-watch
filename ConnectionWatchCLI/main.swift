@@ -536,12 +536,12 @@ func runSchemaCommand() {
        event_type          TEXT NOT NULL          -- 'probe' or 'speed_test'
        connection_state    TEXT NOT NULL          -- 'good', 'degraded', 'disconnected', 'paused'
        health_score        INTEGER NOT NULL       -- 0 to 100 composite health score
-       rating_label        TEXT NOT NULL          -- 'Excellent', 'Good', 'Fair', 'Poor', 'Offline'
+       rating_label        TEXT NOT NULL          -- 'Excellent', 'Good', 'Fair', 'Poor', 'Offline', 'Recovering' (clean again, held at degraded for 60s)
        ping_latency_ms     REAL                   -- ICMP RTT in ms (NULL if failed/filtered)
        jitter_ms           REAL                   -- Ping burst stddev in ms
        packet_loss_pct     REAL                   -- 0.0 to 100.0 packet loss percentage
        ping_target         TEXT                   -- e.g. '1.1.1.1'
-       http_latency_ms     REAL                   -- HTTP check duration in ms (includes setup/fallbacks since v1.4.2)
+       http_latency_ms     REAL                   -- HTTP check duration in ms. Since v1.5.0 each check opens a new connection (TCP + TLS); earlier values reused one and are not comparable
        http_endpoint       TEXT                   -- e.g. 'https://www.google.com/generate_204'
        download_speed_mbps REAL                   -- Download throughput in Mbps (speed tests)
        bytes_transferred   INTEGER                -- Bytes downloaded during speed test

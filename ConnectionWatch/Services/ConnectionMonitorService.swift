@@ -28,6 +28,7 @@ final class ConnectionMonitorService {
     private var speedTestTask: Task<Void, Never>?
     private var lastPathChangeDate: Date = .distantPast
     private var probeGeneration: Int = 0
+    private var recoveryHold = RecoveryHold()
 
     init() {
         NotificationCenter.default.addObserver(
@@ -387,8 +388,10 @@ final class ConnectionMonitorService {
             previousState: prevState
         )
 
-        self.health = evaluated
-        updateState(evaluated.state)
+        // One passing probe does not earn Good: it has to hold for RecoveryHold.defaultDuration.
+        let shown = recoveryHold.apply(evaluated, now: Date())
+        self.health = shown
+        updateState(shown.state)
     }
 
     private func updateState(_ newState: ConnectionState) {

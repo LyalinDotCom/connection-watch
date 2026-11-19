@@ -13,6 +13,22 @@ struct NetworkHealth: Sendable, Equatable {
     let httpLatency: Double?
     let downloadSpeedMbps: Double? // Purely informational (on-demand only, does not affect score)
     let recentPacketLoss: Double   // 0...100% effective packet loss
+    var isRecovering: Bool = false // True while RecoveryHold keeps a clean reading at Degraded
+
+    /// Limits for the HTTP probe, derived from the ping limits.
+    /// The probe opens a new connection every time, so a healthy result costs about three round trips
+    /// (TCP handshake, TLS handshake, request) plus fixed handshake and lookup work that does not scale
+    /// with distance. Sharing the ping limits would park a healthy link on Degraded.
+    /// The fixed part was 30-60ms across three endpoints on one Wi-Fi link (v1.5.0); revisit with more data.
+    static let httpRoundTripsPerProbe: Double = 3
+    static let httpFixedOverheadMs: Double = 50
+
+    static func httpThresholds(goodThreshold: Double, degradedThreshold: Double) -> (good: Double, degraded: Double) {
+        (
+            good: goodThreshold * httpRoundTripsPerProbe + httpFixedOverheadMs,
+            degraded: degradedThreshold * httpRoundTripsPerProbe + httpFixedOverheadMs
+        )
+    }
 
     static let initial = NetworkHealth(
         score: 100,
@@ -110,20 +126,21 @@ struct NetworkHealth: Sendable, Equatable {
         stabilityScore = max(0, min(100, stabilityScore))
 
         // 3. HTTP Latency Score (0-100) — Weight: 30% (primary if ICMP blocked)
-        let idealHTTP = min(80.0, goodThreshold * 0.8)
+        let httpLimits = httpThresholds(goodThreshold: goodThreshold, degradedThreshold: degradedThreshold)
+        let idealHTTP = httpLimits.good * 0.5
         let httpScore: Double
         if httpLatency <= idealHTTP {
             httpScore = 100
-        } else if httpLatency <= goodThreshold {
-            let ratio = (httpLatency - idealHTTP) / max(1, goodThreshold - idealHTTP)
+        } else if httpLatency <= httpLimits.good {
+            let ratio = (httpLatency - idealHTTP) / max(1, httpLimits.good - idealHTTP)
             httpScore = 100 - (ratio * 25)
-        } else if httpLatency <= degradedThreshold {
-            let ratio = (httpLatency - goodThreshold) / max(1, degradedThreshold - goodThreshold)
+        } else if httpLatency <= httpLimits.degraded {
+            let ratio = (httpLatency - httpLimits.good) / max(1, httpLimits.degraded - httpLimits.good)
             httpScore = 75 - (ratio * 50)
             reasons.append(String(format: "Slow HTTP (%.0fms)", httpLatency))
         } else {
-            // Continuous ramp above degradedThreshold instead of a flat 15 cliff
-            httpScore = max(5, 25 - (httpLatency - degradedThreshold) / 100)
+            // Continuous ramp above the degraded limit instead of a flat 15 cliff
+            httpScore = max(5, 25 - (httpLatency - httpLimits.degraded) / 100)
             reasons.append(String(format: "Very slow HTTP (%.0fms)", httpLatency))
         }
 
@@ -137,7 +154,7 @@ struct NetworkHealth: Sendable, Equatable {
             }
             if effectiveLoss >= 15 || recentHTTPFailureRate >= 25 {
                 rawScore = min(rawScore, 58)
-            } else if httpLatency > goodThreshold || effectiveLoss >= 5 || recentHTTPFailureRate > 0 {
+            } else if httpLatency > httpLimits.good || effectiveLoss >= 5 || recentHTTPFailureRate > 0 {
                 rawScore = min(rawScore, 67)
             }
             if reasons.isEmpty {
@@ -152,7 +169,7 @@ struct NetworkHealth: Sendable, Equatable {
             // Critical caps so severe issues always trigger Degraded state
             if effectiveLoss >= 15 || recentHTTPFailureRate >= 25 {
                 rawScore = min(rawScore, 58)
-            } else if pingLatency == nil || (pingLatency ?? 0) > goodThreshold || httpLatency > goodThreshold || effectiveLoss >= 5 || recentHTTPFailureRate > 0 {
+            } else if pingLatency == nil || (pingLatency ?? 0) > goodThreshold || httpLatency > httpLimits.good || effectiveLoss >= 5 || recentHTTPFailureRate > 0 {
                 rawScore = min(rawScore, 67)
             }
         }
@@ -191,5 +208,58 @@ struct NetworkHealth: Sendable, Equatable {
             downloadSpeedMbps: downloadSpeedMbps,
             recentPacketLoss: effectiveLoss
         )
+    }
+}
+
+extension NetworkHealth {
+    /// A clean reading shown as Degraded because trouble was seen `stableFor` seconds ago.
+    /// The score is capped below the Good band so state and score stay consistent everywhere they are stored.
+    func heldAsRecovering(stableFor: TimeInterval, of holdDuration: TimeInterval) -> NetworkHealth {
+        let note = String(format: "Recovering (stable %.0fs of %.0fs)", stableFor, holdDuration)
+        return NetworkHealth(
+            score: min(score, 67),
+            state: .degraded,
+            ratingLabel: "Recovering",
+            reasons: [note] + reasons,
+            isInformationalNoteOnly: false,
+            isICMPBlocked: isICMPBlocked,
+            pingLatency: pingLatency,
+            jitter: jitter,
+            httpLatency: httpLatency,
+            downloadSpeedMbps: downloadSpeedMbps,
+            recentPacketLoss: recentPacketLoss,
+            isRecovering: true
+        )
+    }
+}
+
+/// Makes Good something the connection has to hold, not something one passing probe grants.
+/// Any Degraded or Disconnected reading takes effect at once. A Good reading is only shown as Good
+/// once `duration` seconds have passed since the last reading that was not Good; until then it is
+/// shown as Degraded with a "Recovering" label.
+struct RecoveryHold: Sendable {
+    static let defaultDuration: TimeInterval = 60
+
+    let duration: TimeInterval
+    private(set) var lastTroubleDate: Date?
+
+    init(duration: TimeInterval = RecoveryHold.defaultDuration) {
+        self.duration = duration
+    }
+
+    mutating func apply(_ health: NetworkHealth, now: Date) -> NetworkHealth {
+        guard health.state == .good else {
+            lastTroubleDate = now
+            return health
+        }
+        guard let lastTroubleDate else { return health }
+
+        let stableFor = now.timeIntervalSince(lastTroubleDate)
+        // A negative interval means the clock was set back; treat the hold as served rather than extend it.
+        guard stableFor >= 0, stableFor < duration else {
+            self.lastTroubleDate = nil
+            return health
+        }
+        return health.heldAsRecovering(stableFor: stableFor, of: duration)
     }
 }

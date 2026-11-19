@@ -15,11 +15,11 @@ A macOS menu bar app that tells you whether your internet is actually working �
 | Both spiking together | Your local link |
 | High jitter, no loss | Congested Wi-Fi |
 
-It's quiet by design — background monitoring is one ping burst and one HTTP `HEAD` request every 10 seconds. The download speed test only runs when you press the button, because a monitor that saturates your connection to measure it is mostly measuring itself.
+It's quiet by design — background monitoring is one ping burst and one HTTP `HEAD` request every 10 seconds. Each HTTP check opens a new connection, so it pays for the TCP and TLS handshakes the way a newly opened app would instead of reusing a warm connection. The download speed test only runs when you press the button, because a monitor that saturates your connection to measure it is mostly measuring itself.
 
 It also won't cry wolf. Plenty of corporate, hotel, and VPN networks silently drop ICMP. Connection Watch notices and scores on HTTP alone instead of parking a red light on a perfectly good connection.
 
-HTTP is the availability check: if the primary endpoint fails, the app tries independent fallback endpoints before reporting Offline. A successful ping cannot override that result. HTTP timing includes connection setup and fallback attempts; recent HTTP failures keep the status Degraded during recovery. The menu bar shows **Offline** or **Degraded** when there is a problem, with separate ping and HTTP readings in the popover. These probes estimate general internet access; they cannot guarantee that every site or application is reachable.
+HTTP is the availability check: if the primary endpoint fails, the app tries independent fallback endpoints before reporting Offline. A successful ping cannot override that result. HTTP timing includes connection setup and fallback attempts, and is judged against its own limits (three round trips plus 50 ms, derived from the latency thresholds in Settings). One passing probe does not turn the status green again: after any problem the status reads **Recovering** (yellow) until every probe has been clean for 60 seconds. The menu bar shows **Offline**, **Degraded** or **Recovering** when there is or has just been a problem, with separate ping and HTTP readings in the popover. These probes estimate general internet access; they cannot guarantee that every site or application is reachable.
 
 ## Features
 

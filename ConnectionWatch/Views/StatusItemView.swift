@@ -5,6 +5,7 @@ struct StatusItemView: View {
     var score: Int? = nil
     var pingLatency: Double? = nil
     var httpLatency: Double? = nil
+    var isRecovering: Bool = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -16,7 +17,7 @@ struct StatusItemView: View {
                 Text("Offline")
                     .font(.system(size: 11, weight: .medium))
             } else if state == .degraded {
-                Text("Degraded")
+                Text(isRecovering ? "Recovering" : "Degraded")
                     .font(.system(size: 11, weight: .medium))
             } else if let pingLatency {
                 Text(String(format: "%.0fms", pingLatency))
